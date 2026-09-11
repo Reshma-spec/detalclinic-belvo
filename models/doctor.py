@@ -6,8 +6,13 @@ class Doctor(db.Model):
     
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='SET NULL'), nullable=True)
+    specialty_id = db.Column(db.Integer, db.ForeignKey('specialties.id'), nullable=True)
     name = db.Column(db.String(100), nullable=False)
     specialization = db.Column(db.String(100), default='General Dentistry')
+    qualification = db.Column(db.String(100), default='BDS, MDS')
+    years_experience = db.Column(db.Integer, default=5)
+    bio = db.Column(db.Text, nullable=True)
+    avatar_url = db.Column(db.String(255), nullable=True)
     license_number = db.Column(db.String(50), nullable=True)
     phone = db.Column(db.String(20), nullable=True)
     email = db.Column(db.String(100), nullable=True)

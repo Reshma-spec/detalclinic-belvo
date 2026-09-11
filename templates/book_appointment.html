@@ -1,0 +1,140 @@
+{% extends 'base.html' %}
+{% block title %}Book Appointment  DentiFlow{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card border-0 shadow-sm rounded-4 p-4 p-md-5">
+            <div class="text-center mb-4">
+                <div class="badge bg-primary bg-opacity-10 text-primary px-3 py-2 rounded-pill fw-semibold mb-2">
+                    <i class="fa-solid fa-calendar-check me-1"></i> Interactive Appointment Scheduling
+                </div>
+                <h3 class="fw-bold text-dark">Book Your Dental Visit</h3>
+                <p class="text-muted">Select your preferred dentist, specialty, date, and available time slot.</p>
+            </div>
+
+            <form action="{{ url_for('portal.book_appointment') }}" method="POST" id="bookingForm">
+                
+                <!-- Step 1: Select Specialty & Doctor -->
+                <div class="mb-4">
+                    <label class="form-label text-xs fw-bold text-uppercase text-secondary">1. Select Specialty & Doctor *</label>
+                    <select name="doctor_id" id="doctorSelect" class="form-select form-select-lg bg-light" required>
+                        <option value="">-- Choose Dentist --</option>
+                        {% for doc in doctors %}
+                        <option value="{{ doc.id }}" {% if request.args.get('doctor_id')|int == doc.id %}selected{% endif %}>
+                            Dr. {{ doc.name }} ({{ doc.specialization }})  Fee: {{ settings.currency_symbol }}{{ doc.consultation_fee }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Step 2: Select Date -->
+                <div class="mb-4">
+                    <label class="form-label text-xs fw-bold text-uppercase text-secondary">2. Select Preferred Date *</label>
+                    <input type="date" name="appointment_date" id="dateInput" class="form-control form-control-lg bg-light" required min="{{ today_str }}">
+                </div>
+
+                <!-- Step 3: Available Time Slots (Loaded via AJAX API) -->
+                <div class="mb-4">
+                    <label class="form-label text-xs fw-bold text-uppercase text-secondary">3. Select Available Time Slot *</label>
+                    <div id="slotsContainer" class="p-3 bg-light rounded-3 border text-center">
+                        <span class="text-muted small"><i class="fa-solid fa-info-circle me-1"></i> Please select a dentist and date to view live available time slots.</span>
+                    </div>
+                    <input type="hidden" name="appointment_time" id="selectedTime" required>
+                </div>
+
+                <!-- Step 4: Reason for Visit -->
+                <div class="mb-4">
+                    <label class="form-label text-xs fw-bold text-uppercase text-secondary">4. Reason for Visit / Chief Complaint</label>
+                    <textarea name="chief_complaint" class="form-control bg-light" rows="3" placeholder="e.g. Routine cleaning, toothache in upper molar, consultation..."></textarea>
+                </div>
+
+                <button type="submit" class="btn btn-primary btn-lg w-100 fw-bold shadow-sm py-3" id="submitBookingBtn" disabled>
+                    <i class="fa-solid fa-check-circle me-2"></i> Confirm & Book Appointment
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const doctorSelect = document.getElementById('doctorSelect');
+    const dateInput = document.getElementById('dateInput');
+    const slotsContainer = document.getElementById('slotsContainer');
+    const selectedTimeInput = document.getElementById('selectedTime');
+    const submitBtn = document.getElementById('submitBookingBtn');
+
+    // Default date to today
+    const today = new Date().toISOString().split('T')[0];
+    dateInput.min = today;
+    if (!dateInput.value) {
+        dateInput.value = today;
+    }
+
+    function fetchAvailableSlots() {
+        const docId = doctorSelect.value;
+        const aptDate = dateInput.value;
+
+        if (!docId || !aptDate) {
+            slotsContainer.innerHTML = '<span class="text-muted small"><i class="fa-solid fa-info-circle me-1"></i> Please select a dentist and date to view live available time slots.</span>';
+            selectedTimeInput.value = '';
+            submitBtn.disabled = true;
+            return;
+        }
+
+        slotsContainer.innerHTML = '<div class="spinner-border text-primary spinner-border-sm me-2" role="status"></div> Loading available slots...';
+
+        fetch(/appointments/api/available-slots?doctor_id=&date=)
+            .then(res => res.json())
+            .then(data => {
+                if (data.error) {
+                    slotsContainer.innerHTML = <span class="text-danger small"></span>;
+                    return;
+                }
+
+                if (!data.slots || data.slots.length === 0) {
+                    slotsContainer.innerHTML = '<span class="text-warning small">No slots available for this doctor on this date.</span>';
+                    return;
+                }
+
+                let html = '<div class="d-flex flex-wrap gap-2 justify-content-center">';
+                data.slots.forEach(slot => {
+                    if (slot.available) {
+                        html += <button type="button" class="btn btn-outline-primary btn-sm slot-btn fw-semibold px-3 py-2" data-time=""></button>;
+                    } else {
+                        html += <button type="button" class="btn btn-secondary btn-sm disabled opacity-50 px-3 py-2" disabled> (Booked)</button>;
+                    }
+                });
+                html += '</div>';
+                slotsContainer.innerHTML = html;
+
+                // Add slot selection handlers
+                document.querySelectorAll('.slot-btn').forEach(btn => {
+                    btn.addEventListener('click', function() {
+                        document.querySelectorAll('.slot-btn').forEach(b => b.classList.remove('btn-primary', 'active', 'text-white'));
+                        document.querySelectorAll('.slot-btn').forEach(b => b.classList.add('btn-outline-primary'));
+                        
+                        this.classList.remove('btn-outline-primary');
+                        this.classList.add('btn-primary', 'active', 'text-white');
+                        
+                        selectedTimeInput.value = this.dataset.time;
+                        submitBtn.disabled = false;
+                    });
+                });
+            })
+            .catch(err => {
+                slotsContainer.innerHTML = '<span class="text-danger small">Failed to load time slots. Please try again.</span>';
+            });
+    }
+
+    doctorSelect.addEventListener('change', fetchAvailableSlots);
+    dateInput.addEventListener('change', fetchAvailableSlots);
+
+    // Initial trigger if doctor pre-selected
+    if (doctorSelect.value) {
+        fetchAvailableSlots();
+    }
+});
+</script>
+{% endblock %}

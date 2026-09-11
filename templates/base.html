@@ -1,5 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
+<script>
+(function(){var t=localStorage.getItem('df-theme');if(t==='dark')document.documentElement.setAttribute('data-theme','dark');})();
+</script>
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -33,54 +36,104 @@
             </div>
 
             <div class="sidebar-nav">
-                <div class="nav-section-title">Main Menu</div>
-                <a href="{{ url_for('dashboard.index') }}" class="nav-link-item {% if request.endpoint == 'dashboard.index' %}active{% endif %}">
-                    <i class="fas fa-chart-line"></i>
-                    <span>Dashboard</span>
-                </a>
-                <a href="{{ url_for('patients.index') }}" class="nav-link-item {% if 'patients' in request.endpoint %}active{% endif %}">
-                    <i class="fas fa-user-injured"></i>
-                    <span>Patients</span>
-                </a>
-                <a href="{{ url_for('appointments.index') }}" class="nav-link-item {% if 'appointments' in request.endpoint %}active{% endif %}">
-                    <i class="fas fa-calendar-check"></i>
-                    <span>Appointments</span>
-                </a>
-                <a href="{{ url_for('queue.index') }}" class="nav-link-item {% if 'queue' in request.endpoint %}active{% endif %}">
-                    <i class="fas fa-users-rays"></i>
-                    <span>Live Queue</span>
-                </a>
+                {% if session.get('role') == 'patient' %}
+                    <div class="nav-section-title">Patient Portal</div>
+                    <a href="{{ url_for('portal.dashboard') }}" class="nav-link-item {% if 'portal.dashboard' in request.endpoint %}active{% endif %}">
+                        <i class="fas fa-user-circle"></i>
+                        <span>My Portal</span>
+                    </a>
+                    <a href="{{ url_for('portal.book_appointment') }}" class="nav-link-item {% if 'portal.book_appointment' in request.endpoint %}active{% endif %}">
+                        <i class="fas fa-calendar-plus"></i>
+                        <span>Book Appointment</span>
+                    </a>
+                    <a href="{{ url_for('doctors.directory') }}" class="nav-link-item {% if 'doctors' in request.endpoint %}active{% endif %}">
+                        <i class="fas fa-user-doctor"></i>
+                        <span>Our Dentists</span>
+                    </a>
+                    <a href="{{ url_for('landing.index') }}" class="nav-link-item">
+                        <i class="fas fa-house"></i>
+                        <span>Clinic Website</span>
+                    </a>
+                {% elif session.get('role') == 'doctor' %}
+                    <div class="nav-section-title">Doctor Workspace</div>
+                    <a href="{{ url_for('doctors.dashboard') }}" class="nav-link-item {% if 'doctors.dashboard' in request.endpoint %}active{% endif %}">
+                        <i class="fas fa-stethoscope"></i>
+                        <span>Doctor Workspace</span>
+                    </a>
+                    <a href="{{ url_for('patients.index') }}" class="nav-link-item {% if 'patients' in request.endpoint %}active{% endif %}">
+                        <i class="fas fa-user-injured"></i>
+                        <span>Patients</span>
+                    </a>
+                    <a href="{{ url_for('appointments.index') }}" class="nav-link-item {% if 'appointments' in request.endpoint %}active{% endif %}">
+                        <i class="fas fa-calendar-check"></i>
+                        <span>Appointments</span>
+                    </a>
+                    <a href="{{ url_for('queue.index') }}" class="nav-link-item {% if 'queue' in request.endpoint %}active{% endif %}">
+                        <i class="fas fa-users-rays"></i>
+                        <span>Live Queue</span>
+                    </a>
+                    <a href="{{ url_for('clinical.index') }}" class="nav-link-item {% if 'clinical' in request.endpoint %}active{% endif %}">
+                        <i class="fas fa-notes-medical"></i>
+                        <span>Clinical Records</span>
+                    </a>
+                    <a href="{{ url_for('treatments.index') }}" class="nav-link-item {% if 'treatments' in request.endpoint %}active{% endif %}">
+                        <i class="fas fa-tooth"></i>
+                        <span>Treatment Plans</span>
+                    </a>
+                {% else %}
+                    <div class="nav-section-title">Main Menu</div>
+                    <a href="{{ url_for('dashboard.index') }}" class="nav-link-item {% if request.endpoint == 'dashboard.index' %}active{% endif %}">
+                        <i class="fas fa-chart-line"></i>
+                        <span>Dashboard</span>
+                    </a>
+                    <a href="{{ url_for('patients.index') }}" class="nav-link-item {% if 'patients' in request.endpoint %}active{% endif %}">
+                        <i class="fas fa-user-injured"></i>
+                        <span>Patients</span>
+                    </a>
+                    <a href="{{ url_for('appointments.index') }}" class="nav-link-item {% if 'appointments' in request.endpoint %}active{% endif %}">
+                        <i class="fas fa-calendar-check"></i>
+                        <span>Appointments</span>
+                    </a>
+                    <a href="{{ url_for('queue.index') }}" class="nav-link-item {% if 'queue' in request.endpoint %}active{% endif %}">
+                        <i class="fas fa-users-rays"></i>
+                        <span>Live Queue</span>
+                    </a>
+                    <a href="{{ url_for('doctors.directory') }}" class="nav-link-item {% if 'doctors' in request.endpoint %}active{% endif %}">
+                        <i class="fas fa-user-doctor"></i>
+                        <span>Dentist Directory</span>
+                    </a>
 
-                <div class="nav-section-title">Clinical Practice</div>
-                <a href="{{ url_for('clinical.index') }}" class="nav-link-item {% if 'clinical' in request.endpoint %}active{% endif %}">
-                    <i class="fas fa-stethoscope"></i>
-                    <span>Clinical Records</span>
-                </a>
-                <a href="{{ url_for('treatments.index') }}" class="nav-link-item {% if 'treatments' in request.endpoint %}active{% endif %}">
-                    <i class="fas fa-notes-medical"></i>
-                    <span>Treatment Plans</span>
-                </a>
+                    <div class="nav-section-title">Clinical Practice</div>
+                    <a href="{{ url_for('clinical.index') }}" class="nav-link-item {% if 'clinical' in request.endpoint %}active{% endif %}">
+                        <i class="fas fa-stethoscope"></i>
+                        <span>Clinical Records</span>
+                    </a>
+                    <a href="{{ url_for('treatments.index') }}" class="nav-link-item {% if 'treatments' in request.endpoint %}active{% endif %}">
+                        <i class="fas fa-notes-medical"></i>
+                        <span>Treatment Plans</span>
+                    </a>
 
-                <div class="nav-section-title">Finance & Supply</div>
-                <a href="{{ url_for('billing.index') }}" class="nav-link-item {% if 'billing' in request.endpoint %}active{% endif %}">
-                    <i class="fas fa-file-invoice-dollar"></i>
-                    <span>Billing & Invoices</span>
-                </a>
-                <a href="{{ url_for('inventory.index') }}" class="nav-link-item {% if 'inventory' in request.endpoint %}active{% endif %}">
-                    <i class="fas fa-boxes-stacked"></i>
-                    <span>Inventory</span>
-                </a>
-                <a href="{{ url_for('reports.index') }}" class="nav-link-item {% if 'reports' in request.endpoint %}active{% endif %}">
-                    <i class="fas fa-file-waveform"></i>
-                    <span>Clinic Reports</span>
-                </a>
+                    <div class="nav-section-title">Finance & Supply</div>
+                    <a href="{{ url_for('billing.index') }}" class="nav-link-item {% if 'billing' in request.endpoint %}active{% endif %}">
+                        <i class="fas fa-file-invoice-dollar"></i>
+                        <span>Billing & Invoices</span>
+                    </a>
+                    <a href="{{ url_for('inventory.index') }}" class="nav-link-item {% if 'inventory' in request.endpoint %}active{% endif %}">
+                        <i class="fas fa-boxes-stacked"></i>
+                        <span>Inventory</span>
+                    </a>
+                    <a href="{{ url_for('reports.index') }}" class="nav-link-item {% if 'reports' in request.endpoint %}active{% endif %}">
+                        <i class="fas fa-file-waveform"></i>
+                        <span>Clinic Reports</span>
+                    </a>
 
-                {% if session.get('role') == 'admin' %}
-                <div class="nav-section-title">Administration</div>
-                <a href="{{ url_for('settings.index') }}" class="nav-link-item {% if 'settings' in request.endpoint %}active{% endif %}">
-                    <i class="fas fa-sliders"></i>
-                    <span>Settings & Staff</span>
-                </a>
+                    {% if session.get('role') == 'admin' %}
+                    <div class="nav-section-title">Administration</div>
+                    <a href="{{ url_for('settings.index') }}" class="nav-link-item {% if 'settings' in request.endpoint %}active{% endif %}">
+                        <i class="fas fa-sliders"></i>
+                        <span>Settings & Specialties</span>
+                    </a>
+                    {% endif %}
                 {% endif %}
             </div>
 
@@ -100,6 +153,9 @@
             </div>
         </aside>
 
+        <!-- Mobile Sidebar Overlay -->
+        <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
         <!-- Main Content Area -->
         <main class="app-main">
             <!-- Top Navbar -->
@@ -117,6 +173,9 @@
                 </div>
 
                 <div class="header-actions">
+                    <button id="darkModeToggle" class="dark-mode-toggle" title="Toggle Dark Mode" aria-label="Toggle dark mode">
+                        <i class="fas fa-moon"></i>
+                    </button>
                     <button class="btn btn-outline-primary btn-sm rounded-pill d-none d-md-flex align-items-center gap-2" data-bs-toggle="modal" data-bs-target="#quickPatientModal">
                         <i class="fas fa-user-plus"></i>
                         <span>New Patient</span>
@@ -305,6 +364,9 @@
             </div>
         </div>
     </div>
+
+    <!-- Toast Notification Container -->
+    <div id="toast-container"></div>
 
     <!-- Bootstrap 5 Bundle JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>

@@ -4,12 +4,16 @@ db = SQLAlchemy()
 
 from models.user import User
 from models.clinic_setting import ClinicSetting
+from models.specialty import Specialty
 from models.doctor import Doctor
 from models.patient import Patient
 from models.appointment import Appointment
 from models.clinical_record import ClinicalRecord
+from models.prescription import Prescription, PrescriptionItem
 from models.dental_chart import DentalToothCondition
 from models.treatment import TreatmentPlan
 from models.invoice import Invoice, InvoiceItem
 from models.payment import Payment
 from models.inventory import InventoryItem
+from models.timeline import PatientTimeline
+from models.token import PasswordResetToken

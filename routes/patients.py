@@ -1,5 +1,5 @@
 from datetime import datetime
-from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
+from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, session
 from routes.auth import login_required
 from models import db, Patient, Doctor, Appointment, ClinicalRecord, TreatmentPlan, Invoice, Payment, DentalToothCondition, ClinicSetting
 
@@ -13,6 +13,9 @@ def generate_patient_code():
 @patients_bp.route('/')
 @login_required
 def index():
+    if session.get('role') == 'patient':
+        return redirect(url_for('portal.dashboard'))
+
     search_query = request.args.get('search', '').strip()
     gender_filter = request.args.get('gender', '').strip()
     blood_filter = request.args.get('blood_group', '').strip()
@@ -91,6 +94,19 @@ def add():
             notes=''
         )
         db.session.add(condition)
+        
+    # Log timeline event
+    from models import PatientTimeline
+    timeline = PatientTimeline(
+        patient_id=patient.id,
+        event_type='registration',
+        title='Patient Registered',
+        description=f'Registered code {patient.patient_code} with phone {patient.phone}',
+        badge_color='success',
+        icon='fa-user-plus',
+        created_by='Staff'
+    )
+    db.session.add(timeline)
     db.session.commit()
     
     flash(f'Patient {patient.full_name} ({patient.patient_code}) created successfully!', 'success')
@@ -103,6 +119,14 @@ def detail(patient_id):
     if not patient:
         flash('Patient not found.', 'danger')
         return redirect(url_for('patients.index'))
+
+    # Object-Level Access Control (OLAC): Patient can only view their own profile
+    user_role = session.get('role')
+    user_id = session.get('user_id')
+    if user_role == 'patient':
+        if patient.user_id != user_id:
+            flash('Access Denied: You are not authorized to view another patient profile.', 'danger')
+            return render_template('errors/403.html'), 403
         
     doctors = Doctor.query.filter_by(is_active=True).all()
     dental_conditions = DentalToothCondition.query.filter_by(patient_id=patient.id).order_by(DentalToothCondition.tooth_number.asc()).all()
@@ -110,6 +134,11 @@ def detail(patient_id):
     # Map tooth number to condition dict
     chart_data = {c.tooth_number: c.to_dict() for c in dental_conditions}
     
+    # Timeline events
+    from models import PatientTimeline, Prescription
+    timeline_events = PatientTimeline.query.filter_by(patient_id=patient.id).order_by(PatientTimeline.created_at.desc()).all()
+    prescriptions = Prescription.query.filter_by(patient_id=patient.id).order_by(Prescription.prescription_date.desc()).all()
+
     # Fetch active tab
     active_tab = request.args.get('tab', 'overview')
     settings = ClinicSetting.get_settings()
@@ -119,6 +148,8 @@ def detail(patient_id):
         patient=patient,
         doctors=doctors,
         chart_data=chart_data,
+        timeline_events=timeline_events,
+        prescriptions=prescriptions,
         active_tab=active_tab,
         settings=settings
     )

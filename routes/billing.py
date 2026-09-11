@@ -1,5 +1,5 @@
 from datetime import datetime, date
-from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
+from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, session
 from routes.auth import login_required
 from models import db, Invoice, InvoiceItem, Payment, Patient, Doctor, TreatmentPlan, ClinicSetting
 
@@ -13,6 +13,9 @@ def generate_invoice_number():
 @billing_bp.route('/')
 @login_required
 def index():
+    if session.get('role') == 'patient':
+        return redirect(url_for('portal.dashboard'))
+
     status_filter = request.args.get('status', '').strip()
     search_query = request.args.get('search', '').strip()
     doctor_filter = request.args.get('doctor_id', '').strip()
@@ -151,6 +154,15 @@ def detail(invoice_id):
     if not invoice:
         flash('Invoice not found.', 'danger')
         return redirect(url_for('billing.index'))
+
+    # Object-Level Access Control (OLAC)
+    user_role = session.get('role')
+    user_id = session.get('user_id')
+    if user_role == 'patient':
+        if invoice.patient.user_id != user_id:
+            flash('Access Denied: You are not authorized to view this invoice.', 'danger')
+            return render_template('errors/403.html'), 403
+
     invoice.recalculate()
     settings = ClinicSetting.get_settings()
     return render_template('invoice_detail.html', invoice=invoice, settings=settings)

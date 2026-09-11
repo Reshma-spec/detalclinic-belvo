@@ -1,0 +1,57 @@
+{% extends 'base.html' %}
+{% block title %}Dr. {{ doctor.name }}  DentiFlow{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card border-0 shadow-sm rounded-4 p-4 p-md-5">
+            <div class="d-flex flex-wrap align-items-center gap-4 mb-4">
+                <div class="bg-primary text-white rounded-circle fs-1 d-flex align-items-center justify-content-center shadow" style="width: 90px; height: 90px;">
+                    <i class="fa-solid fa-user-doctor"></i>
+                </div>
+                <div>
+                    <span class="badge bg-primary bg-opacity-10 text-primary px-3 py-2 rounded-pill fw-semibold mb-2">{{ doctor.specialization }}</span>
+                    <h2 class="fw-bold text-dark mb-1">Dr. {{ doctor.name }}</h2>
+                    <p class="text-muted mb-0"><i class="fa-solid fa-graduation-cap text-primary me-1"></i> {{ doctor.qualification }}  {{ doctor.years_experience }} Years Experience</p>
+                </div>
+            </div>
+
+            <hr class="my-4">
+
+            <h5 class="fw-bold text-dark mb-3">About Doctor</h5>
+            <p class="text-muted leading-relaxed mb-4">
+                {{ doctor.bio or 'Dr. ' ~ doctor.name ~ ' is a dedicated dental specialist at DentiFlow Dental Care committed to delivering comfortable, patient-centered oral health solutions.' }}
+            </p>
+
+            <div class="bg-light p-4 rounded-4 border mb-4">
+                <h6 class="fw-bold text-dark mb-3"><i class="fa-solid fa-clock text-primary me-2"></i> Clinical Schedule & Consultation</h6>
+                <div class="row g-3">
+                    <div class="col-sm-6">
+                        <small class="text-muted text-uppercase fw-bold text-xs d-block">Available Days</small>
+                        <span class="fw-semibold text-dark">{{ doctor.working_days }}</span>
+                    </div>
+                    <div class="col-sm-6">
+                        <small class="text-muted text-uppercase fw-bold text-xs d-block">Available Hours</small>
+                        <span class="fw-semibold text-dark">{{ doctor.working_hours_start }} - {{ doctor.working_hours_end }}</span>
+                    </div>
+                    <div class="col-sm-6">
+                        <small class="text-muted text-uppercase fw-bold text-xs d-block">Consultation Fee</small>
+                        <span class="fw-bold text-success fs-5">{{ settings.currency_symbol }}{{ "%.2f"|format(doctor.consultation_fee) }}</span>
+                    </div>
+                    <div class="col-sm-6">
+                        <small class="text-muted text-uppercase fw-bold text-xs d-block">License Number</small>
+                        <span class="fw-semibold text-dark">{{ doctor.license_number or 'LIC-DENT-8849' }}</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="d-flex gap-3">
+                <a href="{{ url_for('portal.book_appointment') }}?doctor_id={{ doctor.id }}" class="btn btn-primary btn-lg flex-grow-1 fw-bold shadow-sm">
+                    <i class="fa-solid fa-calendar-plus me-2"></i> Book Appointment with Dr. {{ doctor.name }}
+                </a>
+                <a href="{{ url_for('doctors.directory') }}" class="btn btn-outline-secondary btn-lg fw-semibold">Back</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

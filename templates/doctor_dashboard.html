@@ -1,0 +1,144 @@
+{% extends 'base.html' %}
+{% block title %}Doctor Workspace  Dr. {{ doctor.name }}{% endblock %}
+
+{% block content %}
+<div class="row g-4 mb-4">
+    <div class="col-12">
+        <div class="card border-0 bg-dark text-white p-4 rounded-4 shadow-sm">
+            <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="bg-primary text-white rounded-circle fs-3 d-flex align-items-center justify-content-center shadow" style="width: 64px; height: 64px;">
+                        <i class="fa-solid fa-user-doctor"></i>
+                    </div>
+                    <div>
+                        <span class="badge bg-info bg-opacity-20 text-info mb-1">{{ doctor.specialization }}</span>
+                        <h2 class="fw-bold mb-0">Dr. {{ doctor.name }}</h2>
+                        <small class="text-white-50"><i class="fa-solid fa-graduation-cap me-1"></i> {{ doctor.qualification }}  Room 102</small>
+                    </div>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    <span class="badge bg-success px-3 py-2 fs-6"><i class="fa-solid fa-circle me-1"></i> Active Status</span>
+                    <span class="text-white-50 small ms-2">Today: {{ today_str }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Active Queue Metrics -->
+<div class="row g-3 mb-4">
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm rounded-4 p-3 bg-white border-start border-4 border-info">
+            <span class="text-muted text-xs fw-bold text-uppercase">Waiting Patients</span>
+            <h3 class="fw-bold text-info mb-0 mt-1">{{ waiting_patients|length }}</h3>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm rounded-4 p-3 bg-white border-start border-4 border-warning">
+            <span class="text-muted text-xs fw-bold text-uppercase">In Chair Currently</span>
+            <h3 class="fw-bold text-warning mb-0 mt-1">{{ in_chair|length }}</h3>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm rounded-4 p-3 bg-white border-start border-4 border-success">
+            <span class="text-muted text-xs fw-bold text-uppercase">Completed Today</span>
+            <h3 class="fw-bold text-success mb-0 mt-1">{{ completed|length }}</h3>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- Today's Patient Schedule Queue -->
+    <div class="col-lg-8">
+        <div class="card border-0 shadow-sm rounded-4">
+            <div class="card-header bg-white border-0 py-3 d-flex align-items-center justify-content-between">
+                <h5 class="fw-bold mb-0 text-dark"><i class="fa-solid fa-stethoscope text-primary me-2"></i> Today's Consultations</h5>
+                <span class="badge bg-light text-dark border">{{ today_appointments|length }} Total</span>
+            </div>
+            <div class="card-body p-0">
+                {% if today_appointments %}
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="bg-light">
+                            <tr>
+                                <th class="ps-4">Token</th>
+                                <th>Time</th>
+                                <th>Patient</th>
+                                <th>Chief Complaint</th>
+                                <th>Status</th>
+                                <th class="text-end pe-4">Clinical Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for apt in today_appointments %}
+                            <tr class="{% if apt.status == 'In Chair' %}table-warning{% endif %}">
+                                <td class="ps-4 fw-bold text-primary">#{{ apt.token_number }}</td>
+                                <td class="fw-semibold">{{ apt.appointment_time }}</td>
+                                <td>
+                                    <a href="{{ url_for('patients.detail', patient_id=apt.patient_id) }}" class="fw-bold text-dark text-decoration-none">
+                                        {{ apt.patient.full_name }}
+                                    </a>
+                                    <small class="d-block text-muted">{{ apt.patient.gender }}, {{ apt.patient.age or 'N/A' }} yrs</small>
+                                </td>
+                                <td>{{ apt.chief_complaint }}</td>
+                                <td>
+                                    {% if apt.status == 'In Chair' %}
+                                        <span class="badge bg-warning text-dark px-3 py-2"><i class="fa-solid fa-tooth me-1"></i> In Chair</span>
+                                    {% elif apt.status == 'Checked In' %}
+                                        <span class="badge bg-info text-white">Checked In</span>
+                                    {% elif apt.status == 'Completed' %}
+                                        <span class="badge bg-success">Completed</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">{{ apt.status }}</span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-end pe-4">
+                                    <a href="{{ url_for('patients.detail', patient_id=apt.patient_id) }}?tab=dental_chart" class="btn btn-sm btn-primary fw-semibold">
+                                        <i class="fa-solid fa-folder-open me-1"></i> Open Workspace
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-5 text-muted">
+                    <i class="fa-solid fa-calendar-day fs-1 mb-2"></i>
+                    <p class="mb-0">No consultations scheduled for today.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Clinical Work & Prescriptions -->
+    <div class="col-lg-4">
+        <div class="card border-0 shadow-sm rounded-4">
+            <div class="card-header bg-white border-0 py-3">
+                <h5 class="fw-bold mb-0 text-dark"><i class="fa-solid fa-notes-medical text-success me-2"></i> Recent Records Logged</h5>
+            </div>
+            <div class="card-body">
+                {% if recent_clinical %}
+                <div class="d-flex flex-column gap-3">
+                    {% for rec in recent_clinical %}
+                    <div class="p-3 bg-light rounded-3 border">
+                        <div class="d-flex align-items-center justify-content-between mb-1">
+                            <strong class="text-dark">{{ rec.patient.full_name }}</strong>
+                            <small class="text-muted text-xs">{{ rec.visit_date }}</small>
+                        </div>
+                        <p class="text-muted small mb-1"><strong>Diagnosis:</strong> {{ rec.diagnosis or 'Consultation' }}</p>
+                        <a href="{{ url_for('patients.detail', patient_id=rec.patient_id) }}" class="text-primary text-xs fw-bold text-decoration-none">
+                            View Patient Profile ?
+                        </a>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <p class="text-muted text-center py-4">No recent records logged today.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

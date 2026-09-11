@@ -19,6 +19,30 @@ class InventoryItem(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     @property
+    def min_quantity(self):
+        return self.min_stock_level
+
+    @min_quantity.setter
+    def min_quantity(self, value):
+        self.min_stock_level = value
+
+    @property
+    def unit_cost(self):
+        return self.purchase_price
+
+    @unit_cost.setter
+    def unit_cost(self, value):
+        self.purchase_price = value
+
+    @property
+    def supplier(self):
+        return self.supplier_name
+
+    @supplier.setter
+    def supplier(self, value):
+        self.supplier_name = value
+
+    @property
     def is_low_stock(self):
         return self.quantity <= self.min_stock_level
 

@@ -1,5 +1,5 @@
 from datetime import datetime, date
-from flask import Blueprint, render_template, request, redirect, url_for, flash
+from flask import Blueprint, render_template, request, redirect, url_for, flash, session
 from routes.auth import login_required, role_required
 from models import db, ClinicalRecord, Patient, Doctor, Appointment, ClinicSetting
 
@@ -8,6 +8,9 @@ clinical_bp = Blueprint('clinical', __name__)
 @clinical_bp.route('/')
 @login_required
 def index():
+    if session.get('role') == 'patient':
+        return redirect(url_for('portal.dashboard'))
+
     search_query = request.args.get('search', '').strip()
     doctor_filter = request.args.get('doctor_id', '').strip()
     
@@ -43,6 +46,7 @@ def index():
 
 @clinical_bp.route('/add', methods=['POST'])
 @login_required
+@role_required('doctor', 'admin')
 def add():
     patient_id = request.form.get('patient_id')
     doctor_id = request.form.get('doctor_id')

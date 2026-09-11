@@ -10,12 +10,55 @@ document.addEventListener('DOMContentLoaded', function () {
         }, 5000);
     });
 
-    // Mobile sidebar toggle
+    // =============================================
+    // Mobile sidebar toggle with overlay
+    // =============================================
     const toggleBtn = document.getElementById('sidebarToggle');
     const sidebar = document.querySelector('.app-sidebar');
+    const overlay = document.getElementById('sidebarOverlay');
+
+    function closeSidebar() {
+        if (sidebar) sidebar.classList.remove('show');
+        if (overlay) overlay.classList.remove('show');
+    }
+
     if (toggleBtn && sidebar) {
         toggleBtn.addEventListener('click', function () {
             sidebar.classList.toggle('show');
+            if (overlay) overlay.classList.toggle('show');
+        });
+    }
+
+    if (overlay) {
+        overlay.addEventListener('click', closeSidebar);
+    }
+
+    // =============================================
+    // Dark Mode Toggle
+    // =============================================
+    const darkModeToggle = document.getElementById('darkModeToggle');
+    if (darkModeToggle) {
+        // Set initial icon based on current theme
+        const currentTheme = document.documentElement.getAttribute('data-theme');
+        const icon = darkModeToggle.querySelector('i');
+        if (currentTheme === 'dark' && icon) {
+            icon.classList.remove('fa-moon');
+            icon.classList.add('fa-sun');
+        }
+
+        darkModeToggle.addEventListener('click', function () {
+            const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+            if (isDark) {
+                document.documentElement.removeAttribute('data-theme');
+                localStorage.setItem('df-theme', 'light');
+                if (icon) { icon.classList.remove('fa-sun'); icon.classList.add('fa-moon'); }
+                DentiFlow.toast('Light mode enabled', 'info', 'Theme');
+            } else {
+                document.documentElement.setAttribute('data-theme', 'dark');
+                localStorage.setItem('df-theme', 'dark');
+                if (icon) { icon.classList.remove('fa-moon'); icon.classList.add('fa-sun'); }
+                DentiFlow.toast('Dark mode enabled', 'info', 'Theme');
+            }
         });
     }
 
@@ -29,7 +72,99 @@ document.addEventListener('DOMContentLoaded', function () {
     initInvoiceCalculations();
 });
 
+
+// =============================================
+// TOAST NOTIFICATION SYSTEM
+// Usage: DentiFlow.toast('Message text', 'success', 'Optional Title');
+// Types: success, danger, warning, info
+// =============================================
+window.DentiFlow = window.DentiFlow || {};
+
+DentiFlow.toast = function (message, type, title) {
+    type = type || 'info';
+    var container = document.getElementById('toast-container');
+    if (!container) return;
+
+    var iconMap = {
+        success: 'fa-check-circle',
+        danger:  'fa-circle-exclamation',
+        warning: 'fa-triangle-exclamation',
+        info:    'fa-circle-info'
+    };
+    var titleMap = {
+        success: 'Success',
+        danger:  'Error',
+        warning: 'Warning',
+        info:    'Info'
+    };
+
+    var toast = document.createElement('div');
+    toast.className = 'df-toast toast-' + type;
+    toast.innerHTML =
+        '<i class="fas ' + (iconMap[type] || iconMap.info) + ' toast-icon"></i>' +
+        '<div class="toast-body">' +
+            '<div class="toast-title">' + (title || titleMap[type] || 'Notification') + '</div>' +
+            '<div class="toast-msg">' + message + '</div>' +
+        '</div>' +
+        '<button class="toast-close" aria-label="Close">&times;</button>' +
+        '<div class="toast-progress"></div>';
+
+    container.appendChild(toast);
+
+    // Close handler
+    var closeBtn = toast.querySelector('.toast-close');
+    if (closeBtn) {
+        closeBtn.addEventListener('click', function () {
+            dismissToast(toast);
+        });
+    }
+
+    // Auto-dismiss after 4 seconds
+    setTimeout(function () {
+        dismissToast(toast);
+    }, 4000);
+
+    function dismissToast(el) {
+        if (el._dismissed) return;
+        el._dismissed = true;
+        el.style.animation = 'toastSlideOut 0.35s forwards';
+        setTimeout(function () { el.remove(); }, 400);
+    }
+};
+
+// =============================================
+// Convert Flask flash messages to toasts
+// =============================================
+document.addEventListener('DOMContentLoaded', function () {
+    // After a small delay, convert existing alert boxes into toasts
+    setTimeout(function () {
+        var alertBoxes = document.querySelectorAll('.alert-dismissible');
+        alertBoxes.forEach(function (alertEl) {
+            var category = 'info';
+            if (alertEl.classList.contains('alert-success')) category = 'success';
+            else if (alertEl.classList.contains('alert-danger')) category = 'danger';
+            else if (alertEl.classList.contains('alert-warning')) category = 'warning';
+
+            var text = '';
+            // Get the text content from the nested div
+            var innerDivs = alertEl.querySelectorAll('.d-flex div');
+            if (innerDivs.length > 0) {
+                text = innerDivs[innerDivs.length - 1].textContent.trim();
+            } else {
+                text = alertEl.textContent.trim();
+            }
+
+            if (text) {
+                DentiFlow.toast(text, category);
+            }
+        });
+    }, 200);
+});
+
+
+// =============================================
 // Dynamic Invoice Calculations
+// =============================================
 function initInvoiceCalculations() {
     const tableBody = document.getElementById('invoiceItemsBody');
     const addItemBtn = document.getElementById('addInvoiceItemBtn');
@@ -117,7 +252,7 @@ function initInvoiceCalculations() {
                     row.remove();
                     recalculateFormTotals();
                 } else {
-                    alert('An invoice must have at least one line item.');
+                    DentiFlow.toast('An invoice must have at least one line item.', 'warning');
                 }
             });
         }

@@ -5,6 +5,47 @@ from models import db, Appointment, Patient, Doctor, ClinicSetting
 
 appointments_bp = Blueprint('appointments', __name__)
 
+@appointments_bp.route('/api/available-slots')
+def available_slots():
+    doctor_id = request.args.get('doctor_id')
+    apt_date = request.args.get('date')
+    
+    if not doctor_id or not apt_date:
+        return jsonify({'error': 'Doctor ID and Date required'}), 400
+        
+    doctor = db.session.get(Doctor, int(doctor_id))
+    if not doctor:
+        return jsonify({'error': 'Doctor not found'}), 404
+        
+    # Standard clinic slots from 09:00 to 17:30 (30-min intervals)
+    all_slots = [
+        '09:00', '09:30', '10:00', '10:30', '11:00', '11:30',
+        '12:00', '12:30', '14:00', '14:30', '15:00', '15:30',
+        '16:00', '16:30', '17:00', '17:30'
+    ]
+    
+    # Query booked appointments for doctor on date
+    booked_apts = Appointment.query.filter_by(
+        doctor_id=int(doctor_id),
+        appointment_date=apt_date
+    ).filter(Appointment.status.in_(['Scheduled', 'Confirmed', 'Checked In', 'In Chair'])).all()
+    
+    booked_times = [a.appointment_time for a in booked_apts]
+    
+    slots_status = []
+    for slot in all_slots:
+        is_booked = slot in booked_times
+        slots_status.append({
+            'time': slot,
+            'available': not is_booked
+        })
+        
+    return jsonify({
+        'doctor_name': doctor.name,
+        'date': apt_date,
+        'slots': slots_status
+    })
+
 @appointments_bp.route('/')
 @login_required
 def index():

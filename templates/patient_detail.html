@@ -33,6 +33,7 @@
 
 <ul class="nav nav-pills mb-4 bg-white p-2 rounded-3 border shadow-sm" id="patientTabs" role="tablist">
     <li class="nav-item"><button class="nav-link {% if active_tab == 'overview' %}active{% endif %}" data-bs-toggle="pill" data-bs-target="#overviewPane"><i class="fas fa-id-card me-1"></i> Overview</button></li>
+    <li class="nav-item"><button class="nav-link {% if active_tab == 'timeline' %}active{% endif %}" data-bs-toggle="pill" data-bs-target="#timelinePane"><i class="fas fa-timeline me-1 text-primary"></i> Timeline</button></li>
     <li class="nav-item"><button class="nav-link {% if active_tab == 'chart' %}active{% endif %}" data-bs-toggle="pill" data-bs-target="#chartPane"><i class="fas fa-tooth me-1"></i> Dental Chart</button></li>
     <li class="nav-item"><button class="nav-link {% if active_tab == 'clinical' %}active{% endif %}" data-bs-toggle="pill" data-bs-target="#clinicalPane"><i class="fas fa-stethoscope me-1"></i> Clinical ({{ patient.clinical_records.count() }})</button></li>
     <li class="nav-item"><button class="nav-link {% if active_tab == 'treatments' %}active{% endif %}" data-bs-toggle="pill" data-bs-target="#treatmentsPane"><i class="fas fa-notes-medical me-1"></i> Treatments ({{ patient.treatment_plans.count() }})</button></li>
@@ -41,6 +42,37 @@
 </ul>
 
 <div class="tab-content" id="patientTabsContent">
+    <!-- Timeline Tab Pane -->
+    <div class="tab-pane fade {% if active_tab == 'timeline' %}show active{% endif %}" id="timelinePane">
+        <div class="card border-0 shadow-sm rounded-4 p-4">
+            <h5 class="fw-bold mb-3 text-dark"><i class="fas fa-timeline text-primary me-2"></i> Comprehensive Patient Timeline</h5>
+            <p class="text-muted small mb-4">Chronological history of patient registration, appointments, clinical consultations, dental chart changes, invoices, and payments.</p>
+            {% if timeline_events %}
+            <div class="timeline ps-3 border-start border-2 border-primary-subtle">
+                {% for ev in timeline_events %}
+                <div class="timeline-event position-relative mb-4 ps-4">
+                    <div class="position-absolute start-0 top-0 translate-middle bg-{{ ev.badge_color }} text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 32px; height: 32px; margin-left: -1px;">
+                        <i class="fas {{ ev.icon }} text-xs"></i>
+                    </div>
+                    <div class="bg-light p-3 rounded-3 border">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <span class="badge bg-{{ ev.badge_color }} text-white text-xs">{{ ev.event_type|upper }}</span>
+                            <small class="text-muted">{{ ev.created_at.strftime('%Y-%m-%d %H:%M') }}</small>
+                        </div>
+                        <h6 class="fw-bold text-dark mt-2 mb-1">{{ ev.title }}</h6>
+                        <p class="text-muted small mb-0">{{ ev.description }}</p>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="text-center py-4 text-muted">
+                <i class="fas fa-clock fs-1 mb-2"></i>
+                <p>No timeline history logged yet.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
     <div class="tab-pane fade {% if active_tab == 'overview' %}show active{% endif %}" id="overviewPane">
         <div class="row g-4">
             <div class="col-lg-6">

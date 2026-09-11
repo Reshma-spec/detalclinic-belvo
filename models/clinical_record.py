@@ -19,5 +19,29 @@ class ClinicalRecord(db.Model):
     follow_up_date = db.Column(db.String(10), nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
+    @property
+    def examination_findings(self):
+        return self.examination or ''
+
+    @examination_findings.setter
+    def examination_findings(self, value):
+        self.examination = value
+
+    @property
+    def treatment_done(self):
+        return self.procedure_performed or ''
+
+    @treatment_done.setter
+    def treatment_done(self, value):
+        self.procedure_performed = value
+
+    @property
+    def doctor_notes(self):
+        return self.clinical_notes or ''
+
+    @doctor_notes.setter
+    def doctor_notes(self, value):
+        self.clinical_notes = value
+
     def __repr__(self):
         return f'<ClinicalRecord #{self.id} for Patient {self.patient_id} on {self.visit_date}>'

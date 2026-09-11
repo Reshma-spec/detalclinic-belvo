@@ -11,7 +11,9 @@ def index():
     settings = ClinicSetting.get_settings()
     users = User.query.order_by(User.role.asc(), User.full_name.asc()).all()
     doctors = Doctor.query.all()
-    return render_template('settings.html', settings=settings, users=users, doctors=doctors)
+    from models import Specialty
+    specialties = Specialty.query.order_by(Specialty.name.asc()).all()
+    return render_template('settings.html', settings=settings, users=users, doctors=doctors, specialties=specialties)
 
 @settings_bp.route('/clinic/update', methods=['POST'])
 @login_required
@@ -21,8 +23,10 @@ def update_clinic():
     settings.clinic_name = request.form.get('clinic_name', settings.clinic_name).strip()
     settings.tagline = request.form.get('tagline', settings.tagline).strip()
     settings.phone = request.form.get('phone', settings.phone).strip()
+    settings.emergency_phone = request.form.get('emergency_phone', settings.emergency_phone).strip()
     settings.email = request.form.get('email', settings.email).strip()
     settings.address = request.form.get('address', settings.address).strip()
+    settings.about_clinic = request.form.get('about_clinic', settings.about_clinic).strip()
     settings.currency_symbol = request.form.get('currency_symbol', settings.currency_symbol).strip()
     try:
         settings.tax_rate = float(request.form.get('tax_rate', settings.tax_rate))
@@ -33,6 +37,31 @@ def update_clinic():
     
     db.session.commit()
     flash('Clinic settings saved successfully!', 'success')
+    return redirect(url_for('settings.index'))
+
+@settings_bp.route('/specialties/add', methods=['POST'])
+@login_required
+@role_required('admin')
+def add_specialty():
+    from models import Specialty
+    name = request.form.get('name', '').strip()
+    code = request.form.get('code', '').strip().lower().replace(' ', '_')
+    description = request.form.get('description', '').strip()
+    icon = request.form.get('icon', 'fa-tooth').strip()
+
+    if not name or not code:
+        flash('Specialty Name and Code are required.', 'danger')
+        return redirect(url_for('settings.index'))
+
+    existing = Specialty.query.filter((Specialty.name == name) | (Specialty.code == code)).first()
+    if existing:
+        flash('A specialty with that name or code already exists.', 'warning')
+        return redirect(url_for('settings.index'))
+
+    spec = Specialty(name=name, code=code, description=description, icon=icon, is_active=True)
+    db.session.add(spec)
+    db.session.commit()
+    flash(f'Specialty "{name}" added successfully!', 'success')
     return redirect(url_for('settings.index'))
 
 @settings_bp.route('/user/add', methods=['POST'])

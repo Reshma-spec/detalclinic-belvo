@@ -12,7 +12,10 @@ def create_app(config_class=Config):
 
     # Register Route Blueprints
     from routes.auth import auth_bp
+    from routes.landing import landing_bp
     from routes.dashboard import dashboard_bp
+    from routes.portal import portal_bp
+    from routes.doctors import doctors_bp
     from routes.patients import patients_bp
     from routes.appointments import appointments_bp
     from routes.queue import queue_bp
@@ -25,7 +28,10 @@ def create_app(config_class=Config):
     from routes.settings import settings_bp
 
     app.register_blueprint(auth_bp)
+    app.register_blueprint(landing_bp)
     app.register_blueprint(dashboard_bp)
+    app.register_blueprint(portal_bp, url_prefix='/portal')
+    app.register_blueprint(doctors_bp, url_prefix='/doctors')
     app.register_blueprint(patients_bp, url_prefix='/patients')
     app.register_blueprint(appointments_bp, url_prefix='/appointments')
     app.register_blueprint(queue_bp, url_prefix='/queue')
@@ -80,12 +86,9 @@ app = create_app()
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
-    is_production = os.environ.get('RENDER', False)
     print("=" * 60)
     print("  DentiFlow - Dental Clinic Owner Management System")
-    if is_production:
-        print(f"  Running on port {port} (production)")
-    else:
-        print(f"  Running locally on http://127.0.0.1:{port}")
+    print(f"  Running locally on http://127.0.0.1:{port}")
+    print("  Default Admin Login: admin / admin123")
     print("=" * 60)
-    app.run(host='0.0.0.0', port=port, debug=not is_production)
+    app.run(host='127.0.0.1', port=port, debug=True)

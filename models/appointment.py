@@ -17,6 +17,14 @@ class Appointment(db.Model):
     notes = db.Column(db.Text, nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
+    @property
+    def chief_complaint(self):
+        return self.reason or ''
+
+    @chief_complaint.setter
+    def chief_complaint(self, value):
+        self.reason = value
+
     clinical_records = db.relationship('ClinicalRecord', backref='appointment', lazy='dynamic')
 
     @classmethod
@@ -30,6 +38,11 @@ class Appointment(db.Model):
         if exclude_id:
             query = query.filter(cls.id != exclude_id)
         return query.first()
+
+    @classmethod
+    def generate_token(cls, appointment_date):
+        count = cls.query.filter_by(appointment_date=appointment_date).count()
+        return 101 + count
 
     def __repr__(self):
         return f'<Appointment #{self.id} on {self.appointment_date} {self.appointment_time} ({self.status})>'

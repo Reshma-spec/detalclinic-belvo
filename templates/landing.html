@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DentiFlow  Dental Care, Organized Beautifully</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        .hero-section {
+            background: linear-gradient(135deg, var(--primary-hover) 0%, var(--primary-color) 100%);
+            color: white;
+            padding: 100px 0 80px;
+            position: relative;
+            overflow: hidden;
+        }
+        .feature-card {
+            border: 1px solid #e2e8f0;
+            border-radius: 16px;
+            padding: 30px;
+            transition: all 0.3s ease;
+            height: 100%;
+            background: #ffffff;
+        }
+        .feature-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 25px -5px rgba(0,0,0,0.05), 0 8px 10px -6px rgba(0,0,0,0.01);
+            border-color: #38bdf8;
+        }
+        .feature-icon {
+            width: 56px; height: 56px;
+            border-radius: 14px;
+            display: inline-flex;
+            align-items: center; justify-content: center;
+            font-size: 24px;
+            margin-bottom: 20px;
+        }
+        .specialty-badge {
+            background: #f0f9ff;
+            color: #0369a1;
+            border: 1px solid #bae6fd;
+            padding: 12px 20px;
+            border-radius: 12px;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            transition: all 0.2s;
+        }
+        .specialty-badge:hover {
+            background: #0284c7;
+            color: white;
+            border-color: #0284c7;
+        }
+        .doctor-card {
+            border: 1px solid #e2e8f0;
+            border-radius: 16px;
+            overflow: hidden;
+            background: white;
+            transition: all 0.3s;
+        }
+        .doctor-card:hover {
+            box-shadow: 0 15px 30px rgba(0,0,0,0.08);
+        }
+    </style>
+</head>
+<body class="bg-light">
+
+    <!-- Landing Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark sticky-top shadow-sm py-3">
+        <div class="container">
+            <a class="navbar-brand d-flex align-items-center gap-2 fw-bold text-primary" href="{{ url_for('landing.index') }}">
+                <div class="bg-primary text-white rounded-3 px-2 py-1 fs-5">
+                    <i class="fa-solid fa-tooth"></i>
+                </div>
+                <span class="fs-4 text-white">Denti<span class="text-info">Flow</span></span>
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#landingNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="landingNav">
+                <ul class="navbar-nav mx-auto mb-2 mb-lg-0 gap-3">
+                    <li class="nav-item"><a class="nav-link text-white-50 active" href="#about">About Clinic</a></li>
+                    <li class="nav-item"><a class="nav-link text-white-50" href="#specialties">Specialties</a></li>
+                    <li class="nav-item"><a class="nav-link text-white-50" href="#doctors">Our Dentists</a></li>
+                    <li class="nav-item"><a class="nav-link text-white-50" href="#features">Features</a></li>
+                </ul>
+                <div class="d-flex align-items-center gap-2">
+                    {% if session.get('user_id') %}
+                        {% if session.get('role') == 'patient' %}
+                            <a href="{{ url_for('portal.dashboard') }}" class="btn btn-info px-4 fw-semibold"><i class="fa-solid fa-user-circle me-1"></i> Patient Portal</a>
+                        {% elif session.get('role') == 'doctor' %}
+                            <a href="{{ url_for('doctors.dashboard') }}" class="btn btn-info px-4 fw-semibold"><i class="fa-solid fa-user-doctor me-1"></i> Doctor Workspace</a>
+                        {% else %}
+                            <a href="{{ url_for('dashboard.index') }}" class="btn btn-primary px-4 fw-semibold"><i class="fa-solid fa-gauge-high me-1"></i> Clinic Dashboard</a>
+                        {% endif %}
+                        <a href="{{ url_for('auth.logout') }}" class="btn btn-outline-light"><i class="fa-solid fa-sign-out-alt"></i></a>
+                    {% else %}
+                        <a href="{{ url_for('auth.login') }}" class="btn btn-outline-light px-4 fw-semibold">Login</a>
+                        <a href="{{ url_for('auth.register') }}" class="btn btn-primary px-4 fw-semibold"><i class="fa-solid fa-user-plus me-1"></i> Create Account</a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero-section">
+        <div class="container position-relative z-1">
+            <div class="row align-items-center gy-5">
+                <div class="col-lg-7">
+                    <span class="badge bg-info bg-opacity-20 text-info px-3 py-2 rounded-pill fw-semibold mb-3">
+                        <i class="fa-solid fa-shield-halved me-1"></i> Comprehensive Dental Management
+                    </span>
+                    <h1 class="display-4 fw-extrabold text-white mb-3">Dental care, organized beautifully.</h1>
+                    <p class="lead text-white-50 mb-4 me-lg-5">
+                        One smart workspace for clinics, doctors, staff, and patients. Experience precision clinical charting, seamless appointment scheduling, interactive patient timelines, and billing.
+                    </p>
+                    <div class="d-flex flex-wrap gap-3">
+                        {% if not session.get('user_id') %}
+                            <a href="{{ url_for('auth.register') }}" class="btn btn-info btn-lg px-4 py-3 fw-bold rounded-3 shadow">
+                                <i class="fa-solid fa-calendar-plus me-2"></i> Book Appointment / Patient Portal
+                            </a>
+                            <a href="{{ url_for('auth.login') }}" class="btn btn-outline-light btn-lg px-4 py-3 fw-semibold rounded-3">
+                                <i class="fa-solid fa-right-to-bracket me-2"></i> Staff Login
+                            </a>
+                        {% else %}
+                            <a href="{{ url_for('portal.book_appointment') }}" class="btn btn-info btn-lg px-4 py-3 fw-bold rounded-3 shadow">
+                                <i class="fa-solid fa-calendar-plus me-2"></i> Book Appointment Now
+                            </a>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="col-lg-5 text-center">
+                    <div class="card border-0 shadow-lg rounded-4 p-4 text-dark text-start bg-white position-relative">
+                        <div class="d-flex align-items-center gap-3 mb-3">
+                            <div class="bg-primary bg-opacity-10 text-primary rounded-circle p-3 fs-3">
+                                <i class="fa-solid fa-hospital"></i>
+                            </div>
+                            <div>
+                                <h5 class="fw-bold mb-0">{{ settings.clinic_name }}</h5>
+                                <small class="text-muted"><i class="fa-solid fa-location-dot text-danger me-1"></i> {{ settings.address }}</small>
+                            </div>
+                        </div>
+                        <hr class="my-2">
+                        <div class="py-2">
+                            <div class="d-flex justify-content-between text-sm py-1">
+                                <span class="text-secondary"><i class="fa-regular fa-clock me-1"></i> Working Hours:</span>
+                                <span class="fw-semibold text-dark">{{ settings.working_hours }}</span>
+                            </div>
+                            <div class="d-flex justify-content-between text-sm py-1">
+                                <span class="text-secondary"><i class="fa-solid fa-phone me-1"></i> Phone:</span>
+                                <span class="fw-semibold text-primary">{{ settings.phone }}</span>
+                            </div>
+                            <div class="d-flex justify-content-between text-sm py-1">
+                                <span class="text-secondary"><i class="fa-solid fa-ambulance me-1"></i> Emergency:</span>
+                                <span class="fw-semibold text-danger">{{ settings.emergency_phone }}</span>
+                            </div>
+                        </div>
+                        <div class="mt-3 bg-light p-3 rounded-3 border">
+                            <small class="text-muted d-block fw-semibold mb-1">Clinic Tagline:</small>
+                            <span class="fst-italic text-dark">"{{ settings.tagline }}"</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Specialties Section -->
+    <section id="specialties" class="py-5 bg-white border-bottom">
+        <div class="container py-4">
+            <div class="text-center max-w-700 mx-auto mb-5">
+                <span class="text-primary fw-bold text-uppercase tracking-wider">Expertise & Services</span>
+                <h2 class="fw-bold text-dark mt-1">Dental Specialties</h2>
+                <p class="text-muted">High-precision dental care tailored to every specialty and patient need.</p>
+            </div>
+            <div class="d-flex flex-wrap justify-content-center gap-3">
+                {% for spec in specialties %}
+                <div class="specialty-badge shadow-sm">
+                    <i class="fa-solid {{ spec.icon }}"></i>
+                    <span>{{ spec.name }}</span>
+                </div>
+                {% else %}
+                <span class="text-muted">General Dentistry, Cosmetic Dentistry, Endodontics, Implantology, Orthodontics</span>
+                {% endfor %}
+            </div>
+        </div>
+    </section>
+
+    <!-- Doctors Directory Showcase -->
+    <section id="doctors" class="py-5 bg-light">
+        <div class="container py-4">
+            <div class="d-flex justify-content-between align-items-end mb-4">
+                <div>
+                    <span class="text-primary fw-bold text-uppercase tracking-wider">Meet Our Team</span>
+                    <h2 class="fw-bold text-dark mt-1">Experienced Dentists</h2>
+                </div>
+                <a href="{{ url_for('doctors.directory') }}" class="btn btn-outline-primary fw-semibold">View Full Directory <i class="fa-solid fa-arrow-right ms-1"></i></a>
+            </div>
+
+            <div class="row g-4">
+                {% for doc in doctors %}
+                <div class="col-md-6 col-lg-4">
+                    <div class="doctor-card h-100 p-4">
+                        <div class="d-flex align-items-center gap-3 mb-3">
+                            <div class="bg-primary text-white rounded-circle fs-3 d-flex align-items-center justify-content-center shadow-sm" style="width: 60px; height: 60px;">
+                                <i class="fa-solid fa-user-doctor"></i>
+                            </div>
+                            <div>
+                                <h5 class="fw-bold mb-1">Dr. {{ doc.name }}</h5>
+                                <span class="badge bg-primary bg-opacity-10 text-primary">{{ doc.specialization }}</span>
+                            </div>
+                        </div>
+                        <p class="text-muted small mb-3">
+                            <i class="fa-solid fa-graduation-cap me-1"></i> {{ doc.qualification }}  {{ doc.years_experience }} Yrs Experience
+                        </p>
+                        <div class="bg-light p-2 rounded-3 text-xs mb-3">
+                            <i class="fa-regular fa-calendar-check text-success me-1"></i> <strong>Available:</strong> {{ doc.working_days }} ({{ doc.working_hours_start }} - {{ doc.working_hours_end }})
+                        </div>
+                        {% if session.get('user_id') %}
+                            <a href="{{ url_for('portal.book_appointment') }}?doctor_id={{ doc.id }}" class="btn btn-sm btn-primary w-100 fw-semibold">
+                                <i class="fa-solid fa-calendar-plus me-1"></i> Book Appointment
+                            </a>
+                        {% else %}
+                            <a href="{{ url_for('auth.register') }}" class="btn btn-sm btn-outline-primary w-100 fw-semibold">
+                                Book Appointment
+                            </a>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </section>
+
+    <!-- Platform Features Grid -->
+    <section id="features" class="py-5 bg-white">
+        <div class="container py-4">
+            <div class="text-center max-w-700 mx-auto mb-5">
+                <span class="text-primary fw-bold text-uppercase tracking-wider">Unified Platform</span>
+                <h2 class="fw-bold text-dark mt-1">Built for Complete Clinic Management</h2>
+                <p class="text-muted">Everything your clinic, doctors, and patients need in one workspace.</p>
+            </div>
+
+            <div class="row g-4">
+                <div class="col-md-6 col-lg-4">
+                    <div class="feature-card">
+                        <div class="feature-icon bg-info bg-opacity-10 text-info">
+                            <i class="fa-solid fa-tooth"></i>
+                        </div>
+                        <h5 class="fw-bold mb-2">Smart Dental Charting</h5>
+                        <p class="text-muted small">Interactive 32-tooth condition visualizer with click-to-edit status (Caries, Crown, Filling, Missing, Root Canal).</p>
+                    </div>
+                </div>
+                <div class="col-md-6 col-lg-4">
+                    <div class="feature-card">
+                        <div class="feature-icon bg-primary bg-opacity-10 text-primary">
+                            <i class="fa-solid fa-user-nurse"></i>
+                        </div>
+                        <h5 class="fw-bold mb-2">Patient Portal</h5>
+                        <p class="text-muted small">Dedicated patient dashboard for booking appointments, checking clinical records, treatment progress, and invoices.</p>
+                    </div>
+                </div>
+                <div class="col-md-6 col-lg-4">
+                    <div class="feature-card">
+                        <div class="feature-icon bg-success bg-opacity-10 text-success">
+                            <i class="fa-solid fa-user-doctor"></i>
+                        </div>
+                        <h5 class="fw-bold mb-2">Doctor Workspace</h5>
+                        <p class="text-muted small">Clinical dashboard for dentists showing today's queue, active patient consultation, and rapid prescription generation.</p>
+                    </div>
+                </div>
+                <div class="col-md-6 col-lg-4">
+                    <div class="feature-card">
+                        <div class="feature-icon bg-warning bg-opacity-10 text-warning">
+                            <i class="fa-solid fa-timeline"></i>
+                        </div>
+                        <h5 class="fw-bold mb-2">Patient Timeline</h5>
+                        <p class="text-muted small">Chronological audit of registration, visits, dental chart changes, prescriptions, invoices, and payments in one view.</p>
+                    </div>
+                </div>
+                <div class="col-md-6 col-lg-4">
+                    <div class="feature-card">
+                        <div class="feature-icon bg-danger bg-opacity-10 text-danger">
+                            <i class="fa-solid fa-file-invoice-dollar"></i>
+                        </div>
+                        <h5 class="fw-bold mb-2">Billing & Invoicing</h5>
+                        <p class="text-muted small">Instant invoice creation with automated tax, discounts, partial payment tracking, and printable receipts.</p>
+                    </div>
+                </div>
+                <div class="col-md-6 col-lg-4">
+                    <div class="feature-card">
+                        <div class="feature-icon bg-secondary bg-opacity-10 text-dark">
+                            <i class="fa-solid fa-boxes-packing"></i>
+                        </div>
+                        <h5 class="fw-bold mb-2">Inventory Management</h5>
+                        <p class="text-muted small">Track dental supplies, stock thresholds, low-stock warnings, and inventory adjustments.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-dark text-white-50 py-4 border-top border-secondary">
+        <div class="container text-center">
+            <p class="mb-1 text-white fw-bold">DentiFlow Dental Care Management Software</p>
+            <small>© 2026 DentiFlow. All rights reserved. Precision oral healthcare workspace.</small>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
