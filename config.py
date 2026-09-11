@@ -5,14 +5,22 @@ basedir = os.path.abspath(os.path.dirname(__file__))
 load_dotenv(os.path.join(basedir, '.env'))
 
 class Config:
-    # CRITICAL: Must be generated/provided via environment variables in production
+    # Determine if running in production (Render.com)
+    is_production = os.environ.get('RENDER') == 'true'
+    
+    # Handle SECRET_KEY with environment awareness
     SECRET_KEY = os.environ.get('SECRET_KEY')
     if not SECRET_KEY:
-        raise ValueError(
-            "SECRET_KEY environment variable is not set. "
-            "For production on Render, this must be generated. "
-            "For local development, set it in .env file."
-        )
+        if is_production:
+            # Production: MUST have SECRET_KEY from environment
+            raise ValueError(
+                "CRITICAL: SECRET_KEY environment variable is not set. "
+                "Render.com must auto-generate this via render.yaml. "
+                "Ensure 'generateValue: true' is set for SECRET_KEY in render.yaml."
+            )
+        else:
+            # Development: Use temporary fallback
+            SECRET_KEY = 'dev-key-change-in-production-2026'
 
     # Support Render persistent disk at /data, or local SQLite fallback
     _db_url = os.environ.get('DATABASE_URL')
