@@ -34,3 +34,18 @@ database/dentiflow.db
 # OS
 .DS_Store
 Thumbs.db
+
+# Build/temp scripts (not part of app)
+assembler.py
+build_full_project.py
+build_pages.py
+builder.py
+gen_t.py
+gen_templates.py
+gen_views.py
+unpacker.py
+write_t1.py
+test.py
+chunks.txt
+files.json
+batch1.json

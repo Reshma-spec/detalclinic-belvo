@@ -1,7 +1,7 @@
 import os
 from flask import Flask, render_template
 from config import Config
-from models import db, ClinicSetting, Patient, Doctor
+from models import db, ClinicSetting, Patient, Doctor, User
 
 def create_app(config_class=Config):
     app = Flask(__name__)
@@ -73,6 +73,20 @@ def create_app(config_class=Config):
         db.create_all()
         # Ensure default settings row exists
         ClinicSetting.get_settings()
+        # Auto-seed default admin on first run (if no users exist)
+        if User.query.count() == 0:
+            from werkzeug.security import generate_password_hash
+            admin = User(
+                username='admin',
+                email='admin@dentiflow.com',
+                full_name='System Administrator',
+                role='admin',
+                is_active=True
+            )
+            admin.password_hash = generate_password_hash('admin123')
+            db.session.add(admin)
+            db.session.commit()
+            print("[DentiFlow] Default admin user created: admin / admin123")
 
     return app
 
