@@ -5,7 +5,14 @@ basedir = os.path.abspath(os.path.dirname(__file__))
 load_dotenv(os.path.join(basedir, '.env'))
 
 class Config:
-    SECRET_KEY = os.environ.get('SECRET_KEY') or 'dentiflow-ultra-secure-clinic-secret-key-2026'
+    # CRITICAL: Must be generated/provided via environment variables in production
+    SECRET_KEY = os.environ.get('SECRET_KEY')
+    if not SECRET_KEY:
+        raise ValueError(
+            "SECRET_KEY environment variable is not set. "
+            "For production on Render, this must be generated. "
+            "For local development, set it in .env file."
+        )
 
     # Support Render persistent disk at /data, or local SQLite fallback
     _db_url = os.environ.get('DATABASE_URL')
