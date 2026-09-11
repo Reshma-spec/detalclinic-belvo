@@ -8,6 +8,8 @@ services:
     envVars:
       - key: SECRET_KEY
         generateValue: true
+      - key: DATABASE_URL
+        value: /data/dentiflow.db
       - key: RENDER
         value: "true"
       - key: CLINIC_NAME
