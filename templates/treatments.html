@@ -1,0 +1,192 @@
+{% extends "base.html" %}
+{% block title %}Treatment Plans - DentiFlow{% endblock %}
+{% block page_title %}Treatment Planning & Tracking{% endblock %}
+{% block page_subtitle %}Comprehensive dental care pathways, phases, estimated costs, and completion statuses{% endblock %}
+
+{% block content %}
+<div class="content-card">
+    <div class="content-card-header flex-wrap gap-2">
+        <form method="GET" action="{{ url_for('treatments.index') }}" class="d-flex flex-wrap gap-2 align-items-center">
+            <div class="input-group input-group-sm" style="min-width: 250px;">
+                <span class="input-group-text bg-light"><i class="fas fa-search text-muted"></i></span>
+                <input type="text" name="search" class="form-control" placeholder="Search patient or treatment..." value="{{ search_query }}">
+            </div>
+            <select name="status" class="form-select form-select-sm" style="width: 140px;" onchange="this.form.submit()">
+                <option value="">All Statuses</option>
+                <option value="Proposed" {% if status_filter == 'Proposed' %}selected{% endif %}>Proposed</option>
+                <option value="Accepted" {% if status_filter == 'Accepted' %}selected{% endif %}>Accepted</option>
+                <option value="In Progress" {% if status_filter == 'In Progress' %}selected{% endif %}>In Progress</option>
+                <option value="Completed" {% if status_filter == 'Completed' %}selected{% endif %}>Completed</option>
+                <option value="Cancelled" {% if status_filter == 'Cancelled' %}selected{% endif %}>Cancelled</option>
+            </select>
+            <select name="doctor_id" class="form-select form-select-sm" style="width: 170px;" onchange="this.form.submit()">
+                <option value="">All Doctors</option>
+                {% for d in doctors %}
+                <option value="{{ d.id }}" {% if doctor_filter == d.id|string %}selected{% endif %}>Dr. {{ d.name }}</option>
+                {% endfor %}
+            </select>
+            <button type="submit" class="btn btn-sm btn-primary">Filter</button>
+            {% if search_query or status_filter or doctor_filter %}
+            <a href="{{ url_for('treatments.index') }}" class="btn btn-sm btn-outline-secondary">Reset</a>
+            {% endif %}
+        </form>
+
+        <button class="btn btn-primary btn-sm rounded-pill" data-bs-toggle="modal" data-bs-target="#newTreatmentModal">
+            <i class="fas fa-plus me-1"></i> New Treatment Plan
+        </button>
+    </div>
+
+    <div class="content-card-body p-0">
+        <div class="table-responsive">
+            <table class="custom-table">
+                <thead>
+                    <tr>
+                        <th>Treatment Name</th>
+                        <th>Tooth #</th>
+                        <th>Patient</th>
+                        <th>Doctor</th>
+                        <th>Estimated Cost</th>
+                        <th>Start / Target</th>
+                        <th>Status</th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for tp in treatments %}
+                    <tr>
+                        <td class="fw-bold text-dark">{{ tp.treatment_name }}</td>
+                        <td><span class="badge bg-light text-dark border">Tooth #{{ tp.tooth_number or 'Full' }}</span></td>
+                        <td>
+                            <a href="{{ url_for('patients.detail', patient_id=tp.patient_id) }}" class="fw-bold text-decoration-none text-dark">
+                                {{ tp.patient.full_name }}
+                            </a>
+                        </td>
+                        <td><span class="badge bg-info-subtle text-info-emphasis">Dr. {{ tp.doctor.name }}</span></td>
+                        <td class="fw-bold text-primary">{{ settings.currency_symbol }}{{ "%.2f"|format(tp.estimated_cost) }}</td>
+                        <td><small class="text-muted">{{ tp.start_date or 'TBD' }}</small></td>
+                        <td>
+                            <span class="status-badge badge-{{ tp.status|lower|replace(' ', '') }}">
+                                {{ tp.status }}
+                            </span>
+                        </td>
+                        <td class="text-end">
+                            <div class="btn-group btn-group-sm">
+                                <button type="button" class="btn btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown">
+                                    Status
+                                </button>
+                                <ul class="dropdown-menu dropdown-menu-end">
+                                    <li>
+                                        <form action="{{ url_for('treatments.update_status', treatment_id=tp.id) }}" method="POST">
+                                            <input type="hidden" name="status" value="Accepted">
+                                            <button type="submit" class="dropdown-item">Mark Accepted</button>
+                                        </form>
+                                    </li>
+                                    <li>
+                                        <form action="{{ url_for('treatments.update_status', treatment_id=tp.id) }}" method="POST">
+                                            <input type="hidden" name="status" value="In Progress">
+                                            <button type="submit" class="dropdown-item">Mark In Progress</button>
+                                        </form>
+                                    </li>
+                                    <li>
+                                        <form action="{{ url_for('treatments.update_status', treatment_id=tp.id) }}" method="POST">
+                                            <input type="hidden" name="status" value="Completed">
+                                            <button type="submit" class="dropdown-item text-success fw-bold">Mark Completed</button>
+                                        </form>
+                                    </li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li>
+                                        <form action="{{ url_for('treatments.update_status', treatment_id=tp.id) }}" method="POST">
+                                            <input type="hidden" name="status" value="Cancelled">
+                                            <button type="submit" class="dropdown-item text-danger">Cancel Plan</button>
+                                        </form>
+                                    </li>
+                                </ul>
+                                <a href="{{ url_for('patients.detail', patient_id=tp.patient_id, tab='treatments') }}" class="btn btn-outline-primary" title="View Patient Dossier">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="8" class="text-center py-5 text-muted">
+                            <i class="fas fa-notes-medical fs-1 mb-2 d-block opacity-50"></i>
+                            No treatment plans found matching filters.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="newTreatmentModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <form action="{{ url_for('treatments.add') }}" method="POST">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="fas fa-notes-medical text-primary me-2"></i>Create Treatment Plan</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Select Patient <span class="text-danger">*</span></label>
+                        <select name="patient_id" class="form-select" required>
+                            <option value="" disabled selected>-- Choose Patient --</option>
+                            {% for p in patients %}
+                            <option value="{{ p.id }}">{{ p.full_name }} ({{ p.patient_code }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Attending Doctor <span class="text-danger">*</span></label>
+                        <select name="doctor_id" class="form-select" required>
+                            {% for d in doctors %}
+                            <option value="{{ d.id }}">Dr. {{ d.name }} ({{ d.specialization }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Treatment Name <span class="text-danger">*</span></label>
+                        <input type="text" name="treatment_name" class="form-control" placeholder="e.g. Root Canal & Crown #19" required>
+                    </div>
+                    <div class="row g-2 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Target Tooth #</label>
+                            <input type="text" name="tooth_number" class="form-control" placeholder="e.g. 19, 20">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Estimated Cost ({{ settings.currency_symbol }})</label>
+                            <input type="number" name="estimated_cost" class="form-control" placeholder="350.00" step="0.01" min="0">
+                        </div>
+                    </div>
+                    <div class="row g-2 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Start Date</label>
+                            <input type="date" name="start_date" class="form-control" value="{{ today_str }}">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Status</label>
+                            <select name="status" class="form-select">
+                                <option value="Proposed">Proposed</option>
+                                <option value="Accepted" selected>Accepted</option>
+                                <option value="In Progress">In Progress</option>
+                                <option value="Completed">Completed</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label fw-semibold">Description / Clinical Notes</label>
+                        <textarea name="description" class="form-control" rows="2" placeholder="Planned phases and materials"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Plan</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

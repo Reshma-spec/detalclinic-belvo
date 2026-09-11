@@ -1,0 +1,449 @@
+{% extends "base.html" %}
+{% block title %}{{ patient.full_name }} ({{ patient.patient_code }}) - Profile{% endblock %}
+{% block page_title %}{{ patient.full_name }}{% endblock %}
+{% block page_subtitle %}{{ patient.patient_code }} ? Registered {{ patient.registration_date.strftime('%b %d, %Y') }}{% endblock %}
+
+{% block content %}
+<div class="content-card mb-4">
+    <div class="content-card-body p-4">
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+            <div class="d-flex align-items-center gap-3">
+                <div class="user-avatar bg-primary text-white" style="width: 60px; height: 60px; font-size: 1.5rem;">
+                    {{ patient.full_name[0] }}
+                </div>
+                <div>
+                    <h3 class="fw-bold text-dark mb-1">{{ patient.full_name }}</h3>
+                    <div class="d-flex flex-wrap gap-2 align-items-center text-muted small">
+                        <span class="badge bg-light text-primary border">{{ patient.patient_code }}</span>
+                        <span><i class="fas fa-venus-mars me-1"></i>{{ patient.gender }}, {{ patient.age or '-' }} yrs</span>
+                        <span><i class="fas fa-phone me-1"></i>{{ patient.phone }}</span>
+                        {% if patient.blood_group %}<span class="badge bg-danger-subtle text-danger"><i class="fas fa-droplet me-1"></i>{{ patient.blood_group }}</span>{% endif %}
+                        {% if patient.allergies %}<span class="badge bg-warning-subtle text-warning-emphasis">Allergy: {{ patient.allergies }}</span>{% endif %}
+                    </div>
+                </div>
+            </div>
+            <div class="d-flex flex-wrap gap-2">
+                <a href="{{ url_for('patients.print_summary', patient_id=patient.id) }}" target="_blank" class="btn btn-outline-secondary btn-sm"><i class="fas fa-print me-1"></i> Print Summary</a>
+                <button class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#editPatientModal"><i class="fas fa-pen-to-square me-1"></i> Edit Profile</button>
+                <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#patientApptModal"><i class="fas fa-calendar-plus me-1"></i> Book Appt</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<ul class="nav nav-pills mb-4 bg-white p-2 rounded-3 border shadow-sm" id="patientTabs" role="tablist">
+    <li class="nav-item"><button class="nav-link {% if active_tab == 'overview' %}active{% endif %}" data-bs-toggle="pill" data-bs-target="#overviewPane"><i class="fas fa-id-card me-1"></i> Overview</button></li>
+    <li class="nav-item"><button class="nav-link {% if active_tab == 'chart' %}active{% endif %}" data-bs-toggle="pill" data-bs-target="#chartPane"><i class="fas fa-tooth me-1"></i> Dental Chart</button></li>
+    <li class="nav-item"><button class="nav-link {% if active_tab == 'clinical' %}active{% endif %}" data-bs-toggle="pill" data-bs-target="#clinicalPane"><i class="fas fa-stethoscope me-1"></i> Clinical ({{ patient.clinical_records.count() }})</button></li>
+    <li class="nav-item"><button class="nav-link {% if active_tab == 'treatments' %}active{% endif %}" data-bs-toggle="pill" data-bs-target="#treatmentsPane"><i class="fas fa-notes-medical me-1"></i> Treatments ({{ patient.treatment_plans.count() }})</button></li>
+    <li class="nav-item"><button class="nav-link {% if active_tab == 'appointments' %}active{% endif %}" data-bs-toggle="pill" data-bs-target="#appointmentsPane"><i class="fas fa-calendar-check me-1"></i> Appts ({{ patient.appointments.count() }})</button></li>
+    <li class="nav-item"><button class="nav-link {% if active_tab == 'billing' %}active{% endif %}" data-bs-toggle="pill" data-bs-target="#billingPane"><i class="fas fa-file-invoice-dollar me-1"></i> Invoices ({{ patient.invoices.count() }})</button></li>
+</ul>
+
+<div class="tab-content" id="patientTabsContent">
+    <div class="tab-pane fade {% if active_tab == 'overview' %}show active{% endif %}" id="overviewPane">
+        <div class="row g-4">
+            <div class="col-lg-6">
+                <div class="content-card h-100">
+                    <div class="content-card-header"><h5 class="content-card-title"><i class="fas fa-user text-primary"></i> Demographics</h5></div>
+                    <div class="content-card-body">
+                        <table class="table table-borderless table-sm mb-0">
+                            <tbody>
+                                <tr><th class="text-muted" style="width: 140px;">Full Name:</th><td class="fw-semibold">{{ patient.full_name }}</td></tr>
+                                <tr><th class="text-muted">Date of Birth:</th><td>{{ patient.dob or 'Not recorded' }}</td></tr>
+                                <tr><th class="text-muted">Gender / Age:</th><td>{{ patient.gender }} / {{ patient.age or '-' }} yrs</td></tr>
+                                <tr><th class="text-muted">Phone:</th><td><a href="tel:{{ patient.phone }}" class="text-decoration-none fw-semibold">{{ patient.phone }}</a></td></tr>
+                                <tr><th class="text-muted">Email:</th><td>{{ patient.email or 'Not recorded' }}</td></tr>
+                                <tr><th class="text-muted">Address:</th><td>{{ patient.address or 'Not recorded' }}</td></tr>
+                                <tr><th class="text-muted">Emergency:</th><td><span class="badge bg-light text-dark border">{{ patient.emergency_contact or 'None' }}</span></td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-6">
+                <div class="content-card h-100">
+                    <div class="content-card-header"><h5 class="content-card-title"><i class="fas fa-heart-pulse text-danger"></i> Medical History</h5></div>
+                    <div class="content-card-body">
+                        <div class="mb-3">
+                            <label class="fw-bold small text-muted text-uppercase">Known Allergies</label>
+                            <div class="p-2 rounded bg-warning-subtle text-warning-emphasis border border-warning-subtle fw-semibold"><i class="fas fa-triangle-exclamation me-1"></i> {{ patient.allergies or 'None' }}</div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="fw-bold small text-muted text-uppercase">Medical History</label>
+                            <div class="p-2 rounded bg-light border text-dark">{{ patient.medical_history or 'None' }}</div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="fw-bold small text-muted text-uppercase">Medications</label>
+                            <div class="p-2 rounded bg-light border text-dark">{{ patient.current_medications or 'None' }}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="tab-pane fade {% if active_tab == 'chart' %}show active{% endif %}" id="chartPane">
+        <div class="content-card mb-4">
+            <div class="content-card-header flex-wrap gap-2">
+                <h5 class="content-card-title"><i class="fas fa-tooth text-primary"></i> Adult Dental Chart (32 Teeth)</h5>
+                <span class="badge bg-info-subtle text-info-emphasis">Click any tooth to edit condition</span>
+            </div>
+            <div class="content-card-body">
+                <div class="d-flex flex-wrap gap-2 mb-4 p-3 bg-light rounded-3 border">
+                    <span class="status-badge tooth-healthy border">Healthy</span>
+                    <span class="status-badge tooth-caries border">Caries</span>
+                    <span class="status-badge tooth-filled border">Filled</span>
+                    <span class="status-badge tooth-missing border">Missing</span>
+                    <span class="status-badge tooth-crown border">Crown</span>
+                    <span class="status-badge tooth-root-canal border">Root Canal</span>
+                    <span class="status-badge tooth-extraction-required border">Extraction Req.</span>
+                    <span class="status-badge tooth-implant border">Implant</span>
+                    <span class="status-badge tooth-other border">Other</span>
+                </div>
+
+                <div class="dental-arch-container text-center">
+                    <div class="arch-header">Upper Maxillary Arch (Teeth 1 - 16)</div>
+                    <div class="teeth-row">
+                        {% set upper_teeth = [
+                            (1, '18', '3rd Molar'), (2, '17', '2nd Molar'), (3, '16', '1st Molar'), (4, '15', '2nd Premolar'),
+                            (5, '14', '1st Premolar'), (6, '13', 'Canine'), (7, '12', 'Lateral Incisor'), (8, '11', 'Central Incisor'),
+                            (9, '21', 'Central Incisor'), (10, '22', 'Lateral Incisor'), (11, '23', 'Canine'), (12, '24', '1st Premolar'),
+                            (13, '25', '2nd Premolar'), (14, '26', '1st Molar'), (15, '27', '2nd Molar'), (16, '28', '3rd Molar')
+                        ] %}
+                        {% for t_num, fdi, name in upper_teeth %}
+                        {% set cond = chart_data.get(t_num, {}).get('condition', 'Healthy') %}
+                        <div class="tooth-card tooth-{{ cond|lower|replace(' ', '-') }}" data-tooth-number="{{ t_num }}" data-fdi-number="{{ fdi }}" data-tooth-name="{{ name }}">
+                            <span class="tooth-number">#{{ t_num }}</span>
+                            <i class="fas fa-tooth tooth-icon"></i>
+                            <span class="tooth-fdi">{{ fdi }}</span>
+                        </div>
+                        {% endfor %}
+                    </div>
+
+                    <div class="my-3 border-top w-75 mx-auto opacity-50"></div>
+
+                    <div class="arch-header">Lower Mandibular Arch (Teeth 32 - 17)</div>
+                    <div class="teeth-row">
+                        {% set lower_teeth = [
+                            (32, '48', '3rd Molar'), (31, '47', '2nd Molar'), (30, '46', '1st Molar'), (29, '45', '2nd Premolar'),
+                            (28, '44', '1st Premolar'), (27, '43', 'Canine'), (26, '42', 'Lateral Incisor'), (25, '41', 'Central Incisor'),
+                            (24, '31', 'Central Incisor'), (23, '32', 'Lateral Incisor'), (22, '33', 'Canine'), (21, '34', '1st Premolar'),
+                            (20, '35', '2nd Premolar'), (19, '36', '1st Molar'), (18, '37', '2nd Molar'), (17, '38', '3rd Molar')
+                        ] %}
+                        {% for t_num, fdi, name in lower_teeth %}
+                        {% set cond = chart_data.get(t_num, {}).get('condition', 'Healthy') %}
+                        <div class="tooth-card tooth-{{ cond|lower|replace(' ', '-') }}" data-tooth-number="{{ t_num }}" data-fdi-number="{{ fdi }}" data-tooth-name="{{ name }}">
+                            <span class="tooth-number">#{{ t_num }}</span>
+                            <i class="fas fa-tooth tooth-icon"></i>
+                            <span class="tooth-fdi">{{ fdi }}</span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <div id="toothEditorPane" class="mt-4 p-4 bg-light rounded-3 border" style="display: none;">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h6 id="selectedToothTitle" class="fw-bold text-primary mb-0"><i class="fas fa-tooth me-2"></i>Tooth Selected</h6>
+                        <div id="chartSaveAlert" class="alert alert-success py-1 px-3 mb-0 small" style="display:none;"><i class="fas fa-check me-1"></i>Saved!</div>
+                    </div>
+                    <form id="toothFallbackForm" action="{{ url_for('dental_chart.save_form', patient_id=patient.id) }}" method="POST">
+                        <input type="hidden" name="tooth_number" id="chartModalToothNum" value="1">
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-4">
+                                <label class="form-label fw-semibold small">Condition</label>
+                                <select name="condition" id="chartModalCondition" class="form-select form-select-sm">
+                                    <option value="Healthy">Healthy (Normal)</option>
+                                    <option value="Caries">Caries (Cavity / Decay)</option>
+                                    <option value="Filled">Filled (Restored)</option>
+                                    <option value="Missing">Missing</option>
+                                    <option value="Crown">Crown</option>
+                                    <option value="Root Canal">Root Canal (RCT)</option>
+                                    <option value="Extraction Required">Extraction Required</option>
+                                    <option value="Implant">Implant</option>
+                                    <option value="Other">Other</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-semibold small">Surface</label>
+                                <select name="surface" id="chartModalSurface" class="form-select form-select-sm">
+                                    <option value="Whole">Whole Tooth</option>
+                                    <option value="Occlusal">Occlusal (O)</option>
+                                    <option value="Mesial">Mesial (M)</option>
+                                    <option value="Distal">Distal (D)</option>
+                                    <option value="Buccal">Buccal (B)</option>
+                                    <option value="Lingual">Lingual (L)</option>
+                                    <option value="MOD">MOD</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-semibold small">Clinical Notes</label>
+                                <input type="text" name="notes" id="chartModalNotes" class="form-control form-control-sm" placeholder="e.g. Sensitive to cold">
+                            </div>
+                        </div>
+                        <div class="d-flex justify-content-end">
+                            <button type="button" id="saveToothQuickBtn" class="btn btn-primary btn-sm px-4"><i class="fas fa-save me-1"></i> Save Condition</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="tab-pane fade {% if active_tab == 'clinical' %}show active{% endif %}" id="clinicalPane">
+        <div class="content-card mb-4">
+            <div class="content-card-header">
+                <h5 class="content-card-title"><i class="fas fa-stethoscope text-primary"></i> Clinical Visit History</h5>
+                <button class="btn btn-primary btn-sm rounded-pill" data-bs-toggle="modal" data-bs-target="#newClinicalModal"><i class="fas fa-plus me-1"></i> New Entry</button>
+            </div>
+            <div class="content-card-body p-0">
+                {% if patient.clinical_records.count() > 0 %}
+                <div class="list-group list-group-flush">
+                    {% for rec in patient.clinical_records %}
+                    <div class="list-group-item p-4 border-bottom">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <div>
+                                <span class="badge bg-primary-subtle text-primary fw-bold me-2"><i class="fas fa-calendar-day me-1"></i>{{ rec.visit_date }}</span>
+                                <span class="fw-bold text-dark">Dr. {{ rec.doctor.name }} ({{ rec.doctor.specialization }})</span>
+                            </div>
+                            <div class="btn-group btn-group-sm">
+                                <a href="{{ url_for('clinical.print_record', record_id=rec.id) }}" target="_blank" class="btn btn-outline-secondary"><i class="fas fa-print"></i> Print</a>
+                                <form action="{{ url_for('clinical.delete', record_id=rec.id) }}" method="POST" class="d-inline" onsubmit="return confirm('Delete record?');"><button type="submit" class="btn btn-outline-danger"><i class="fas fa-trash"></i></button></form>
+                            </div>
+                        </div>
+                        <div class="row g-3 mt-1">
+                            <div class="col-md-6"><div class="small fw-bold text-muted text-uppercase">Chief Complaint</div><div>{{ rec.chief_complaint }}</div></div>
+                            <div class="col-md-6"><div class="small fw-bold text-muted text-uppercase">Diagnosis</div><div class="fw-semibold text-primary">{{ rec.diagnosis }}</div></div>
+                            {% if rec.examination %}<div class="col-md-6"><div class="small fw-bold text-muted text-uppercase">Examination</div><div>{{ rec.examination }}</div></div>{% endif %}
+                            {% if rec.procedure_performed %}<div class="col-md-6"><div class="small fw-bold text-muted text-uppercase">Procedure Performed</div><div class="fw-semibold">{{ rec.procedure_performed }}</div></div>{% endif %}
+                            {% if rec.prescriptions %}<div class="col-12"><div class="small fw-bold text-muted text-uppercase"><i class="fas fa-pills me-1 text-info"></i> Prescriptions</div><div class="p-2 rounded bg-light border font-monospace small">{{ rec.prescriptions|replace('
+', '<br>')|safe }}</div></div>{% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="p-5 text-center text-muted"><i class="fas fa-stethoscope fs-1 mb-2 d-block opacity-50"></i>No clinical records recorded yet.</div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="tab-pane fade {% if active_tab == 'treatments' %}show active{% endif %}" id="treatmentsPane">
+        <div class="content-card mb-4">
+            <div class="content-card-header">
+                <h5 class="content-card-title"><i class="fas fa-notes-medical text-primary"></i> Treatment Plans</h5>
+                <button class="btn btn-primary btn-sm rounded-pill" data-bs-toggle="modal" data-bs-target="#newTreatmentModal"><i class="fas fa-plus me-1"></i> Add Plan</button>
+            </div>
+            <div class="content-card-body p-0">
+                <div class="table-responsive">
+                    <table class="custom-table">
+                        <thead><tr><th>Treatment Name</th><th>Tooth #</th><th>Doctor</th><th>Estimated Cost</th><th>Status</th><th class="text-end">Actions</th></tr></thead>
+                        <tbody>
+                            {% for tp in patient.treatment_plans %}
+                            <tr>
+                                <td class="fw-bold">{{ tp.treatment_name }}</td>
+                                <td><span class="badge bg-light text-dark border">{{ tp.tooth_number or 'Full' }}</span></td>
+                                <td>Dr. {{ tp.doctor.name }}</td>
+                                <td class="fw-semibold">{{ settings.currency_symbol }}{{ "%.2f"|format(tp.estimated_cost) }}</td>
+                                <td><span class="status-badge badge-{{ tp.status|lower|replace(' ', '') }}">{{ tp.status }}</span></td>
+                                <td class="text-end">
+                                    <div class="btn-group btn-group-sm">
+                                        <button type="button" class="btn btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown">Status</button>
+                                        <ul class="dropdown-menu dropdown-menu-end">
+                                            <li><form action="{{ url_for('treatments.update_status', treatment_id=tp.id) }}" method="POST"><input type="hidden" name="status" value="Accepted"><button type="submit" class="dropdown-item">Mark Accepted</button></form></li>
+                                            <li><form action="{{ url_for('treatments.update_status', treatment_id=tp.id) }}" method="POST"><input type="hidden" name="status" value="In Progress"><button type="submit" class="dropdown-item">Mark In Progress</button></form></li>
+                                            <li><form action="{{ url_for('treatments.update_status', treatment_id=tp.id) }}" method="POST"><input type="hidden" name="status" value="Completed"><button type="submit" class="dropdown-item text-success fw-bold">Mark Completed</button></form></li>
+                                        </ul>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr><td colspan="6" class="text-center py-4 text-muted">No treatment plans recorded.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="tab-pane fade {% if active_tab == 'appointments' %}show active{% endif %}" id="appointmentsPane">
+        <div class="content-card mb-4">
+            <div class="content-card-header"><h5 class="content-card-title"><i class="fas fa-calendar-check text-primary"></i> Appointment History</h5></div>
+            <div class="content-card-body p-0">
+                <div class="table-responsive">
+                    <table class="custom-table">
+                        <thead><tr><th>Date & Time</th><th>Doctor</th><th>Type</th><th>Status</th><th class="text-end">Action</th></tr></thead>
+                        <tbody>
+                            {% for appt in patient.appointments %}
+                            <tr>
+                                <td class="fw-bold">{{ appt.appointment_date }} @ {{ appt.appointment_time }}</td>
+                                <td>Dr. {{ appt.doctor.name }}</td>
+                                <td><small class="text-muted">{{ appt.appointment_type }}</small></td>
+                                <td><span class="status-badge badge-{{ appt.status|lower|replace(' ', '') }}">{{ appt.status }}</span></td>
+                                <td class="text-end">
+                                    {% if appt.status != 'Completed' %}
+                                    <form action="{{ url_for('appointments.update_status', appointment_id=appt.id) }}" method="POST" class="d-inline"><input type="hidden" name="status" value="Completed"><button type="submit" class="btn btn-outline-success btn-sm"><i class="fas fa-check"></i> Complete</button></form>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr><td colspan="5" class="text-center py-4 text-muted">No appointments found.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="tab-pane fade {% if active_tab == 'billing' %}show active{% endif %}" id="billingPane">
+        <div class="content-card mb-4">
+            <div class="content-card-header"><h5 class="content-card-title"><i class="fas fa-file-invoice-dollar text-primary"></i> Invoices & Payments</h5></div>
+            <div class="content-card-body p-0">
+                <div class="table-responsive">
+                    <table class="custom-table">
+                        <thead><tr><th>Invoice #</th><th>Date</th><th>Total</th><th>Paid</th><th>Balance</th><th>Status</th><th class="text-end">Actions</th></tr></thead>
+                        <tbody>
+                            {% for inv in patient.invoices %}
+                            <tr>
+                                <td><a href="{{ url_for('billing.detail', invoice_id=inv.id) }}" class="fw-bold text-decoration-none">{{ inv.invoice_number }}</a></td>
+                                <td>{{ inv.invoice_date }}</td>
+                                <td class="fw-semibold">{{ settings.currency_symbol }}{{ "%.2f"|format(inv.total_amount) }}</td>
+                                <td class="text-success fw-semibold">{{ settings.currency_symbol }}{{ "%.2f"|format(inv.paid_amount) }}</td>
+                                <td class="text-danger fw-bold">{{ settings.currency_symbol }}{{ "%.2f"|format(inv.balance_amount) }}</td>
+                                <td><span class="status-badge badge-{{ inv.payment_status|lower|replace(' ', '-') }}">{{ inv.payment_status }}</span></td>
+                                <td class="text-end"><a href="{{ url_for('billing.detail', invoice_id=inv.id) }}" class="btn btn-outline-primary btn-sm"><i class="fas fa-eye"></i> Details</a></td>
+                            </tr>
+                            {% else %}
+                            <tr><td colspan="7" class="text-center py-4 text-muted">No invoices found.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Edit Patient Profile -->
+<div class="modal fade" id="editPatientModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <form action="{{ url_for('patients.edit', patient_id=patient.id) }}" method="POST">
+                <div class="modal-header"><h5 class="modal-title"><i class="fas fa-user-pen text-primary me-2"></i>Edit Patient Profile</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+                <div class="modal-body">
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6"><label class="form-label fw-semibold">Full Name</label><input type="text" name="full_name" class="form-control" value="{{ patient.full_name }}" required></div>
+                        <div class="col-md-3"><label class="form-label fw-semibold">Age</label><input type="number" name="age" class="form-control" value="{{ patient.age or '' }}"></div>
+                        <div class="col-md-3"><label class="form-label fw-semibold">Gender</label><select name="gender" class="form-select"><option value="Male" {% if patient.gender == 'Male' %}selected{% endif %}>Male</option><option value="Female" {% if patient.gender == 'Female' %}selected{% endif %}>Female</option><option value="Other" {% if patient.gender == 'Other' %}selected{% endif %}>Other</option></select></div>
+                    </div>
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-4"><label class="form-label fw-semibold">Phone</label><input type="tel" name="phone" class="form-control" value="{{ patient.phone }}" required></div>
+                        <div class="col-md-4"><label class="form-label fw-semibold">Email</label><input type="email" name="email" class="form-control" value="{{ patient.email or '' }}"></div>
+                        <div class="col-md-4"><label class="form-label fw-semibold">Blood Group</label><input type="text" name="blood_group" class="form-control" value="{{ patient.blood_group or '' }}"></div>
+                    </div>
+                    <div class="mb-3"><label class="form-label fw-semibold">Address</label><input type="text" name="address" class="form-control" value="{{ patient.address or '' }}"></div>
+                    <div class="mb-3"><label class="form-label fw-semibold">Emergency Contact</label><input type="text" name="emergency_contact" class="form-control" value="{{ patient.emergency_contact or '' }}"></div>
+                    <div class="mb-3"><label class="form-label fw-semibold">Known Allergies</label><input type="text" name="allergies" class="form-control" value="{{ patient.allergies or '' }}"></div>
+                    <div class="mb-3"><label class="form-label fw-semibold">Medical History</label><textarea name="medical_history" class="form-control" rows="2">{{ patient.medical_history or '' }}</textarea></div>
+                    <div class="mb-3"><label class="form-label fw-semibold">Current Medications</label><textarea name="current_medications" class="form-control" rows="2">{{ patient.current_medications or '' }}</textarea></div>
+                    <div class="mb-3"><label class="form-label fw-semibold">Notes</label><textarea name="notes" class="form-control" rows="2">{{ patient.notes or '' }}</textarea></div>
+                </div>
+                <div class="modal-footer"><button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button><button type="submit" class="btn btn-primary">Save Changes</button></div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: New Clinical Record -->
+<div class="modal fade" id="newClinicalModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <form action="{{ url_for('clinical.add') }}" method="POST">
+                <input type="hidden" name="patient_id" value="{{ patient.id }}">
+                <div class="modal-header"><h5 class="modal-title"><i class="fas fa-stethoscope text-primary me-2"></i>New Clinical Record</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+                <div class="modal-body">
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6"><label class="form-label fw-semibold">Doctor <span class="text-danger">*</span></label><select name="doctor_id" class="form-select" required>{% for d in doctors %}<option value="{{ d.id }}">Dr. {{ d.name }} ({{ d.specialization }})</option>{% endfor %}</select></div>
+                        <div class="col-md-6"><label class="form-label fw-semibold">Date <span class="text-danger">*</span></label><input type="date" name="visit_date" class="form-control" value="{{ today_str if today_str else '' }}" required></div>
+                    </div>
+                    <div class="mb-3"><label class="form-label fw-semibold">Chief Complaint <span class="text-danger">*</span></label><input type="text" name="chief_complaint" class="form-control" placeholder="e.g. Toothache in molar" required></div>
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6"><label class="form-label fw-semibold">Examination</label><textarea name="examination" class="form-control" rows="2"></textarea></div>
+                        <div class="col-md-6"><label class="form-label fw-semibold">Diagnosis <span class="text-danger">*</span></label><textarea name="diagnosis" class="form-control" rows="2" required></textarea></div>
+                    </div>
+                    <div class="mb-3"><label class="form-label fw-semibold">Procedure Performed</label><input type="text" name="procedure_performed" class="form-control"></div>
+                    <div class="mb-3"><label class="form-label fw-semibold">Prescriptions</label><textarea name="prescriptions" class="form-control font-monospace" rows="3"></textarea></div>
+                    <div class="row g-3">
+                        <div class="col-md-6"><label class="form-label fw-semibold">Notes</label><input type="text" name="clinical_notes" class="form-control"></div>
+                        <div class="col-md-6"><label class="form-label fw-semibold">Follow-Up</label><input type="date" name="follow_up_date" class="form-control"></div>
+                    </div>
+                </div>
+                <div class="modal-footer"><button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button><button type="submit" class="btn btn-primary">Save Record</button></div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: New Treatment Plan -->
+<div class="modal fade" id="newTreatmentModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <form action="{{ url_for('treatments.add') }}" method="POST">
+                <input type="hidden" name="patient_id" value="{{ patient.id }}">
+                <div class="modal-header"><h5 class="modal-title"><i class="fas fa-notes-medical text-primary me-2"></i>Create Treatment Plan</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+                <div class="modal-body">
+                    <div class="mb-3"><label class="form-label fw-semibold">Doctor <span class="text-danger">*</span></label><select name="doctor_id" class="form-select" required>{% for d in doctors %}<option value="{{ d.id }}">Dr. {{ d.name }}</option>{% endfor %}</select></div>
+                    <div class="mb-3"><label class="form-label fw-semibold">Treatment Name <span class="text-danger">*</span></label><input type="text" name="treatment_name" class="form-control" required></div>
+                    <div class="row g-2 mb-3">
+                        <div class="col-md-6"><label class="form-label fw-semibold">Tooth #</label><input type="text" name="tooth_number" class="form-control"></div>
+                        <div class="col-md-6"><label class="form-label fw-semibold">Cost ({{ settings.currency_symbol }})</label><input type="number" name="estimated_cost" class="form-control" step="0.01"></div>
+                    </div>
+                    <div class="row g-2 mb-3">
+                        <div class="col-md-6"><label class="form-label fw-semibold">Start Date</label><input type="date" name="start_date" class="form-control"></div>
+                        <div class="col-md-6"><label class="form-label fw-semibold">Status</label><select name="status" class="form-select"><option value="Proposed">Proposed</option><option value="Accepted" selected>Accepted</option><option value="In Progress">In Progress</option><option value="Completed">Completed</option></select></div>
+                    </div>
+                </div>
+                <div class="modal-footer"><button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button><button type="submit" class="btn btn-primary">Save Plan</button></div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Direct Book Appt -->
+<div class="modal fade" id="patientApptModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <form action="{{ url_for('appointments.add') }}" method="POST">
+                <input type="hidden" name="patient_id" value="{{ patient.id }}">
+                <div class="modal-header"><h5 class="modal-title"><i class="fas fa-calendar-plus text-primary me-2"></i>Book Appt for {{ patient.full_name }}</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+                <div class="modal-body">
+                    <div class="mb-3"><label class="form-label fw-semibold">Doctor <span class="text-danger">*</span></label><select name="doctor_id" class="form-select" required>{% for d in doctors %}<option value="{{ d.id }}">Dr. {{ d.name }}</option>{% endfor %}</select></div>
+                    <div class="row g-2 mb-3">
+                        <div class="col-md-6"><label class="form-label fw-semibold">Date <span class="text-danger">*</span></label><input type="date" name="appointment_date" class="form-control" required></div>
+                        <div class="col-md-6"><label class="form-label fw-semibold">Time Slot <span class="text-danger">*</span></label><input type="time" name="appointment_time" class="form-control" value="10:00" required></div>
+                    </div>
+                    <div class="row g-2 mb-3">
+                        <div class="col-md-6"><label class="form-label fw-semibold">Type</label><select name="appointment_type" class="form-select"><option value="Consultation">Consultation</option><option value="Scaling & Cleaning">Scaling & Cleaning</option><option value="Root Canal Treatment">Root Canal</option><option value="Dental Filling">Dental Filling</option><option value="Tooth Extraction">Extraction</option><option value="Crown & Bridge">Crown & Bridge</option></select></div>
+                        <div class="col-md-6"><label class="form-label fw-semibold">Duration</label><select name="duration_minutes" class="form-select"><option value="15">15 mins</option><option value="30" selected>30 mins</option><option value="45">45 mins</option><option value="60">60 mins</option></select></div>
+                    </div>
+                    <div class="mb-2"><label class="form-label fw-semibold">Reason</label><input type="text" name="reason" class="form-control"></div>
+                </div>
+                <div class="modal-footer"><button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button><button type="submit" class="btn btn-primary">Book</button></div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="{{ url_for('static', filename='js/dental_chart.js') }}"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const chartData = {{ chart_data|tojson }};
+        const chartMgr = new DentalChartManager({{ patient.id }}, chartData);
+    });
+</script>
+{% endblock %}

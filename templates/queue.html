@@ -1,0 +1,158 @@
+{% extends "base.html" %}
+{% block title %}Live Clinic Queue - DentiFlow{% endblock %}
+{% block page_title %}Live Patient Queue Board{% endblock %}
+{% block page_subtitle %}Real-time waiting room and dental chair operational flow for {{ today_str }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+    <form method="GET" action="{{ url_for('queue.index') }}" class="d-flex gap-2 align-items-center">
+        <select name="doctor_id" class="form-select form-select-sm" style="width: 200px;" onchange="this.form.submit()">
+            <option value="">All Active Doctors</option>
+            {% for d in doctors %}
+            <option value="{{ d.id }}" {% if doctor_filter == d.id|string %}selected{% endif %}>Dr. {{ d.name }}</option>
+            {% endfor %}
+        </select>
+        {% if doctor_filter %}
+        <a href="{{ url_for('queue.index') }}" class="btn btn-sm btn-outline-secondary">Show All</a>
+        {% endif %}
+    </form>
+    <div class="d-flex gap-2 align-items-center">
+        <span class="badge bg-success-subtle text-success p-2"><i class="fas fa-circle me-1 small"></i>Live Board Active</span>
+        <button onclick="location.reload()" class="btn btn-sm btn-outline-primary"><i class="fas fa-rotate-right me-1"></i> Refresh</button>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- Waiting Area Column -->
+    <div class="col-lg-4">
+        <div class="content-card h-100 border-warning">
+            <div class="content-card-header bg-warning-subtle text-warning-emphasis">
+                <h5 class="content-card-title">
+                    <i class="fas fa-users-line text-warning"></i> Waiting Area ({{ waiting_list|length }})
+                </h5>
+                <span class="badge bg-warning text-dark">Queue</span>
+            </div>
+            <div class="content-card-body p-3">
+                {% for appt in waiting_list %}
+                <div class="queue-card border-start border-4 border-warning">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="queue-token">#{{ appt.token_number or appt.id }}</span>
+                            <div>
+                                <h6 class="fw-bold mb-0 text-dark">{{ appt.patient.full_name }}</h6>
+                                <small class="text-muted">{{ appt.appointment_time }} ? Dr. {{ appt.doctor.name }}</small>
+                            </div>
+                        </div>
+                        <span class="status-badge badge-{{ appt.status|lower|replace(' ', '') }}">{{ appt.status }}</span>
+                    </div>
+                    <div class="small text-muted mb-3"><i class="fas fa-tooth me-1 text-primary"></i>{{ appt.appointment_type }}</div>
+                    <div class="d-flex gap-2">
+                        {% if appt.status != 'Waiting' %}
+                        <form action="{{ url_for('queue.queue_action', appointment_id=appt.id) }}" method="POST" class="flex-grow-1">
+                            <input type="hidden" name="action" value="call">
+                            <button type="submit" class="btn btn-outline-warning btn-sm w-100"><i class="fas fa-bullhorn me-1"></i> Call Patient</button>
+                        </form>
+                        {% endif %}
+                        <form action="{{ url_for('queue.queue_action', appointment_id=appt.id) }}" method="POST" class="flex-grow-1">
+                            <input type="hidden" name="action" value="start_treatment">
+                            <button type="submit" class="btn btn-primary btn-sm w-100"><i class="fas fa-chair me-1"></i> To Chair</button>
+                        </form>
+                        <form action="{{ url_for('queue.queue_action', appointment_id=appt.id) }}" method="POST">
+                            <input type="hidden" name="action" value="skip">
+                            <button type="submit" class="btn btn-outline-danger btn-sm" title="Skip / No Show"><i class="fas fa-forward"></i></button>
+                        </form>
+                    </div>
+                </div>
+                {% else %}
+                <div class="text-center py-5 text-muted">
+                    <i class="fas fa-chair fs-2 mb-2 d-block opacity-50"></i>
+                    Waiting area is currently clear.
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- In Dental Chair Column -->
+    <div class="col-lg-4">
+        <div class="content-card h-100 border-primary">
+            <div class="content-card-header bg-primary text-white">
+                <h5 class="content-card-title text-white">
+                    <i class="fas fa-teeth text-white"></i> In Treatment Chair ({{ in_treatment_list|length }})
+                </h5>
+                <span class="badge bg-white text-primary">Active</span>
+            </div>
+            <div class="content-card-body p-3">
+                {% for appt in in_treatment_list %}
+                <div class="queue-card border-start border-4 border-primary bg-primary-subtle">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="queue-token bg-primary text-white">#{{ appt.token_number or appt.id }}</span>
+                            <div>
+                                <h6 class="fw-bold mb-0 text-dark">{{ appt.patient.full_name }}</h6>
+                                <small class="text-dark fw-semibold">Attending: Dr. {{ appt.doctor.name }}</small>
+                            </div>
+                        </div>
+                        <span class="status-badge badge-intreatment">In Chair</span>
+                    </div>
+                    <div class="small text-dark mb-3"><strong>Procedure:</strong> {{ appt.appointment_type }}</div>
+                    <div class="d-flex gap-2">
+                        <a href="{{ url_for('patients.detail', patient_id=appt.patient_id, tab='clinical') }}" class="btn btn-outline-dark btn-sm flex-grow-1">
+                            <i class="fas fa-file-waveform me-1"></i> Open Record
+                        </a>
+                        <form action="{{ url_for('queue.queue_action', appointment_id=appt.id) }}" method="POST" class="flex-grow-1">
+                            <input type="hidden" name="action" value="complete">
+                            <button type="submit" class="btn btn-success btn-sm w-100"><i class="fas fa-check me-1"></i> Finish</button>
+                        </form>
+                    </div>
+                </div>
+                {% else %}
+                <div class="text-center py-5 text-muted">
+                    <i class="fas fa-stethoscope fs-2 mb-2 d-block opacity-50"></i>
+                    No patient currently undergoing treatment.
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Completed Today Column -->
+    <div class="col-lg-4">
+        <div class="content-card h-100 border-success">
+            <div class="content-card-header bg-success-subtle text-success-emphasis">
+                <h5 class="content-card-title">
+                    <i class="fas fa-circle-check text-success"></i> Completed Today ({{ completed_list|length }})
+                </h5>
+                <span class="badge bg-success text-white">Done</span>
+            </div>
+            <div class="content-card-body p-3">
+                {% for appt in completed_list %}
+                <div class="queue-card border-start border-4 border-success">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="queue-token bg-success-subtle text-success">#{{ appt.token_number or appt.id }}</span>
+                            <div>
+                                <h6 class="fw-bold mb-0 text-dark">{{ appt.patient.full_name }}</h6>
+                                <small class="text-muted">{{ appt.appointment_time }} ? Dr. {{ appt.doctor.name }}</small>
+                            </div>
+                        </div>
+                        <span class="status-badge badge-completed">Done</span>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center mt-2 pt-2 border-top">
+                        <small class="text-muted">{{ appt.appointment_type }}</small>
+                        <a href="{{ url_for('billing.index') }}" class="btn btn-sm btn-outline-primary py-0 px-2" style="font-size: 0.75rem;">
+                            <i class="fas fa-file-invoice-dollar me-1"></i> Invoice
+                        </a>
+                    </div>
+                </div>
+                {% else %}
+                <div class="text-center py-5 text-muted">
+                    <i class="fas fa-clipboard-check fs-2 mb-2 d-block opacity-50"></i>
+                    No completed appointments yet today.
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

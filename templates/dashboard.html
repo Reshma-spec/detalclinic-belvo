@@ -1,0 +1,368 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - DentiFlow{% endblock %}
+{% block page_title %}Clinic Performance Dashboard{% endblock %}
+{% block page_subtitle %}Real-time clinical, operational and revenue intelligence{% endblock %}
+
+{% block content %}
+<!-- KPI Cards Grid (7 Cards) -->
+<div class="row g-3 mb-4">
+    <!-- Today Appointments -->
+    <div class="col-xl-3 col-md-6">
+        <div class="kpi-card">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <div class="kpi-label">Today's Appointments</div>
+                    <div class="kpi-value">{{ today_appointments_count }}</div>
+                </div>
+                <div class="kpi-icon-wrapper kpi-icon-blue">
+                    <i class="fas fa-calendar-check"></i>
+                </div>
+            </div>
+            <div class="mt-2 small text-muted">
+                <a href="{{ url_for('appointments.index', date=today_str) }}" class="text-primary text-decoration-none">
+                    View today's schedule <i class="fas fa-arrow-right ms-1"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Total Patients -->
+    <div class="col-xl-3 col-md-6">
+        <div class="kpi-card">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <div class="kpi-label">Total Patients</div>
+                    <div class="kpi-value">{{ total_patients_count }}</div>
+                </div>
+                <div class="kpi-icon-wrapper kpi-icon-green">
+                    <i class="fas fa-users"></i>
+                </div>
+            </div>
+            <div class="mt-2 small text-muted">
+                <span class="text-success fw-semibold">+{{ new_patients_count }} new</span> registered this month
+            </div>
+        </div>
+    </div>
+
+    <!-- Today's Revenue -->
+    <div class="col-xl-3 col-md-6">
+        <div class="kpi-card">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <div class="kpi-label">Today's Collections</div>
+                    <div class="kpi-value">{{ settings.currency_symbol }}{{ "%.2f"|format(today_revenue) }}</div>
+                </div>
+                <div class="kpi-icon-wrapper kpi-icon-amber">
+                    <i class="fas fa-sack-dollar"></i>
+                </div>
+            </div>
+            <div class="mt-2 small text-muted">
+                From settled invoices today
+            </div>
+        </div>
+    </div>
+
+    <!-- Pending Payments -->
+    <div class="col-xl-3 col-md-6">
+        <div class="kpi-card">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <div class="kpi-label">Outstanding Balances</div>
+                    <div class="kpi-value text-danger">{{ settings.currency_symbol }}{{ "%.2f"|format(pending_payments_total) }}</div>
+                </div>
+                <div class="kpi-icon-wrapper kpi-icon-red">
+                    <i class="fas fa-receipt"></i>
+                </div>
+            </div>
+            <div class="mt-2 small text-muted">
+                <a href="{{ url_for('billing.index', status='Pending') }}" class="text-danger text-decoration-none">
+                    View overdue invoices <i class="fas fa-arrow-right ms-1"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Active Treatments -->
+    <div class="col-xl-4 col-md-6">
+        <div class="kpi-card">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <div class="kpi-label">Active Treatment Plans</div>
+                    <div class="kpi-value text-purple">{{ active_treatments_count }}</div>
+                </div>
+                <div class="kpi-icon-wrapper kpi-icon-purple">
+                    <i class="fas fa-teeth-open"></i>
+                </div>
+            </div>
+            <div class="mt-2 small text-muted">In Progress & Accepted patient plans</div>
+        </div>
+    </div>
+
+    <!-- Low Stock Items Warning -->
+    <div class="col-xl-4 col-md-6">
+        <div class="kpi-card {% if low_stock_count > 0 %}border-warning bg-warning-subtle{% endif %}">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <div class="kpi-label text-warning-emphasis">Low Stock Inventory</div>
+                    <div class="kpi-value {% if low_stock_count > 0 %}text-warning{% endif %}">{{ low_stock_count }}</div>
+                </div>
+                <div class="kpi-icon-wrapper kpi-icon-amber">
+                    <i class="fas fa-triangle-exclamation"></i>
+                </div>
+            </div>
+            <div class="mt-2 small text-muted">
+                {% if low_stock_count > 0 %}
+                <a href="{{ url_for('inventory.index', status='low') }}" class="text-dark fw-semibold text-decoration-none">
+                    Restock items immediately <i class="fas fa-arrow-right ms-1"></i>
+                </a>
+                {% else %}
+                All clinic supplies are healthy
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Queue Action -->
+    <div class="col-xl-4 col-md-12">
+        <div class="kpi-card bg-primary text-white">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <div class="kpi-label text-white-50">Clinic Queue System</div>
+                    <div class="fs-5 fw-bold text-white mt-1">Front Desk & Chair Board</div>
+                </div>
+                <div class="kpi-icon-wrapper bg-white text-primary">
+                    <i class="fas fa-user-clock"></i>
+                </div>
+            </div>
+            <div class="mt-3">
+                <a href="{{ url_for('queue.index') }}" class="btn btn-light btn-sm rounded-pill px-3 fw-semibold text-primary">
+                    Open Live Queue <i class="fas fa-arrow-right ms-1"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Charts Row -->
+<div class="row g-4 mb-4">
+    <!-- Revenue Trend Chart -->
+    <div class="col-lg-8">
+        <div class="content-card h-100">
+            <div class="content-card-header">
+                <h5 class="content-card-title">
+                    <i class="fas fa-chart-area text-primary"></i> 6-Month Revenue Trend ({{ settings.currency_symbol }})
+                </h5>
+                <span class="badge bg-light text-muted">Monthly Collections</span>
+            </div>
+            <div class="content-card-body">
+                <canvas id="revenueTrendChart" height="110"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Appointment Status Distribution -->
+    <div class="col-lg-4">
+        <div class="content-card h-100">
+            <div class="content-card-header">
+                <h5 class="content-card-title">
+                    <i class="fas fa-chart-pie text-primary"></i> Appointment Breakdown
+                </h5>
+            </div>
+            <div class="content-card-body d-flex flex-column justify-content-center">
+                <canvas id="appointmentStatsChart" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Appointments and Patients Tables Row -->
+<div class="row g-4">
+    <!-- Today's Appointment Schedule -->
+    <div class="col-lg-7">
+        <div class="content-card">
+            <div class="content-card-header">
+                <h5 class="content-card-title">
+                    <i class="fas fa-clock text-primary"></i> Today's Schedule ({{ today_appointments|length }})
+                </h5>
+                <a href="{{ url_for('appointments.index') }}" class="btn btn-sm btn-light">View Full Calendar</a>
+            </div>
+            <div class="content-card-body p-0">
+                <div class="table-responsive">
+                    <table class="custom-table">
+                        <thead>
+                            <tr>
+                                <th>Time</th>
+                                <th>Token</th>
+                                <th>Patient</th>
+                                <th>Doctor</th>
+                                <th>Procedure</th>
+                                <th>Status</th>
+                                <th class="text-end">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for appt in today_appointments %}
+                            <tr>
+                                <td class="fw-bold">{{ appt.appointment_time }}</td>
+                                <td><span class="badge bg-light text-dark fw-bold">#{{ appt.token_number or appt.id }}</span></td>
+                                <td>
+                                    <a href="{{ url_for('patients.detail', patient_id=appt.patient_id) }}" class="fw-semibold text-decoration-none text-dark">
+                                        {{ appt.patient.full_name }}
+                                    </a>
+                                </td>
+                                <td><span class="badge bg-info-subtle text-info-emphasis">Dr. {{ appt.doctor.name }}</span></td>
+                                <td><small class="text-muted">{{ appt.appointment_type }}</small></td>
+                                <td>
+                                    <span class="status-badge badge-{{ appt.status|lower|replace(' ', '') }}">
+                                        {{ appt.status }}
+                                    </span>
+                                </td>
+                                <td class="text-end">
+                                    <div class="btn-group btn-group-sm">
+                                        {% if appt.status != 'Completed' %}
+                                        <form action="{{ url_for('appointments.update_status', appointment_id=appt.id) }}" method="POST" class="d-inline">
+                                            <input type="hidden" name="status" value="Completed">
+                                            <button type="submit" class="btn btn-outline-success btn-sm" title="Mark Completed"><i class="fas fa-check"></i></button>
+                                        </form>
+                                        {% endif %}
+                                        <a href="{{ url_for('patients.detail', patient_id=appt.patient_id, tab='clinical') }}" class="btn btn-outline-primary btn-sm" title="Open Clinical Record">
+                                            <i class="fas fa-file-medical"></i>
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="7" class="text-center py-4 text-muted">
+                                    <i class="fas fa-calendar-day fs-3 mb-2 d-block text-muted opacity-50"></i>
+                                    No appointments scheduled for today yet.
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Patients & Low Stock Warnings -->
+    <div class="col-lg-5">
+        <!-- Recent Patients -->
+        <div class="content-card mb-4">
+            <div class="content-card-header">
+                <h5 class="content-card-title">
+                    <i class="fas fa-user-plus text-primary"></i> Recently Registered Patients
+                </h5>
+                <a href="{{ url_for('patients.index') }}" class="btn btn-sm btn-light">All Patients</a>
+            </div>
+            <div class="content-card-body p-0">
+                <div class="list-group list-group-flush">
+                    {% for pat in recent_patients %}
+                    <a href="{{ url_for('patients.detail', patient_id=pat.id) }}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center p-3">
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="user-avatar bg-primary-subtle text-primary fw-bold">
+                                {{ pat.full_name[0] }}
+                            </div>
+                            <div>
+                                <div class="fw-semibold text-dark">{{ pat.full_name }}</div>
+                                <div class="small text-muted">{{ pat.patient_code }} ? {{ pat.phone }}</div>
+                            </div>
+                        </div>
+                        <span class="badge bg-light text-muted">{{ pat.gender }} ({{ pat.age or '-' }}y)</span>
+                    </a>
+                    {% else %}
+                    <div class="p-3 text-center text-muted">No patient records found.</div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Low Stock Items Warning Widget -->
+        {% if low_stock_items %}
+        <div class="content-card border-warning">
+            <div class="content-card-header bg-warning-subtle text-warning-emphasis">
+                <h5 class="content-card-title">
+                    <i class="fas fa-triangle-exclamation text-warning"></i> Inventory Restock Alerts
+                </h5>
+                <a href="{{ url_for('inventory.index', status='low') }}" class="btn btn-sm btn-warning text-dark">Manage</a>
+            </div>
+            <div class="content-card-body p-0">
+                <ul class="list-group list-group-flush">
+                    {% for item in low_stock_items %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center p-3">
+                        <div>
+                            <div class="fw-semibold text-dark">{{ item.item_name }}</div>
+                            <div class="small text-muted">{{ item.category }} ? Supplier: {{ item.supplier_name or 'N/A' }}</div>
+                        </div>
+                        <div class="text-end">
+                            <span class="badge bg-danger">{{ item.quantity }} {{ item.unit }} left</span>
+                            <div class="small text-muted">Min: {{ item.min_stock_level }}</div>
+                        </div>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    // Revenue Trend Chart
+    const revCtx = document.getElementById('revenueTrendChart').getContext('2d');
+    new Chart(revCtx, {
+        type: 'line',
+        data: {
+            labels: {{ month_labels|tojson }},
+            datasets: [{
+                label: 'Monthly Collections ({{ settings.currency_symbol }})',
+                data: {{ revenue_data|tojson }},
+                borderColor: '#0284c7',
+                backgroundColor: 'rgba(2, 132, 199, 0.12)',
+                tension: 0.35,
+                fill: true,
+                pointBackgroundColor: '#0284c7',
+                pointRadius: 5
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: { display: false }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: function(val) { return '{{ settings.currency_symbol }}' + val; }
+                    }
+                }
+            }
+        }
+    });
+
+    // Appointment Status Doughnut Chart
+    const apptCtx = document.getElementById('appointmentStatsChart').getContext('2d');
+    const apptStats = {{ appointment_stats|tojson }};
+    new Chart(apptCtx, {
+        type: 'doughnut',
+        data: {
+            labels: Object.keys(apptStats),
+            datasets: [{
+                data: Object.values(apptStats),
+                backgroundColor: ['#38bdf8', '#4ade80', '#10b981', '#f87171', '#a855f7']
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: { position: 'bottom' }
+            }
+        }
+    });
+</script>
+{% endblock %}

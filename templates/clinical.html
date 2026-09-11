@@ -1,0 +1,171 @@
+{% extends "base.html" %}
+{% block title %}Clinical Records - DentiFlow{% endblock %}
+{% block page_title %}Clinical Records Timeline{% endblock %}
+{% block page_subtitle %}Comprehensive dental examinations, diagnoses, procedures, and prescriptions{% endblock %}
+
+{% block content %}
+<div class="content-card">
+    <div class="content-card-header flex-wrap gap-2">
+        <form method="GET" action="{{ url_for('clinical.index') }}" class="d-flex flex-wrap gap-2 align-items-center">
+            <div class="input-group input-group-sm" style="min-width: 260px;">
+                <span class="input-group-text bg-light"><i class="fas fa-search text-muted"></i></span>
+                <input type="text" name="search" class="form-control" placeholder="Search patient, diagnosis, symptom..." value="{{ search_query }}">
+            </div>
+            <select name="doctor_id" class="form-select form-select-sm" style="width: 170px;" onchange="this.form.submit()">
+                <option value="">All Doctors</option>
+                {% for d in doctors %}
+                <option value="{{ d.id }}" {% if doctor_filter == d.id|string %}selected{% endif %}>Dr. {{ d.name }}</option>
+                {% endfor %}
+            </select>
+            <button type="submit" class="btn btn-sm btn-primary">Search</button>
+            {% if search_query or doctor_filter %}
+            <a href="{{ url_for('clinical.index') }}" class="btn btn-sm btn-outline-secondary">Reset</a>
+            {% endif %}
+        </form>
+
+        <button class="btn btn-primary btn-sm rounded-pill" data-bs-toggle="modal" data-bs-target="#newClinicalRecordModal">
+            <i class="fas fa-plus me-1"></i> New Clinical Entry
+        </button>
+    </div>
+
+    <div class="content-card-body p-0">
+        <div class="table-responsive">
+            <table class="custom-table">
+                <thead>
+                    <tr>
+                        <th>Visit Date</th>
+                        <th>Patient</th>
+                        <th>Attending Doctor</th>
+                        <th>Chief Complaint</th>
+                        <th>Diagnosis</th>
+                        <th>Procedure Done</th>
+                        <th>Prescriptions</th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for rec in records %}
+                    <tr>
+                        <td class="fw-bold">
+                            <i class="fas fa-calendar-day me-1 text-primary small"></i>{{ rec.visit_date }}
+                        </td>
+                        <td>
+                            <a href="{{ url_for('patients.detail', patient_id=rec.patient_id) }}" class="fw-bold text-decoration-none text-dark">
+                                {{ rec.patient.full_name }}
+                            </a>
+                            <div class="small text-muted">{{ rec.patient.patient_code }}</div>
+                        </td>
+                        <td><span class="badge bg-info-subtle text-info-emphasis">Dr. {{ rec.doctor.name }}</span></td>
+                        <td><small>{{ rec.chief_complaint }}</small></td>
+                        <td><span class="fw-semibold text-primary">{{ rec.diagnosis }}</span></td>
+                        <td><small>{{ rec.procedure_performed or '?' }}</small></td>
+                        <td>
+                            {% if rec.prescriptions %}
+                            <span class="badge bg-light text-dark border font-monospace small"><i class="fas fa-pills me-1 text-info"></i>Prescription</span>
+                            {% else %}?{% endif %}
+                        </td>
+                        <td class="text-end">
+                            <div class="btn-group btn-group-sm">
+                                <a href="{{ url_for('clinical.print_record', record_id=rec.id) }}" target="_blank" class="btn btn-outline-secondary" title="Print Prescription">
+                                    <i class="fas fa-print"></i>
+                                </a>
+                                <a href="{{ url_for('patients.detail', patient_id=rec.patient_id, tab='clinical') }}" class="btn btn-outline-primary" title="View Patient Dossier">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="8" class="text-center py-5 text-muted">
+                            <i class="fas fa-stethoscope fs-1 mb-2 d-block opacity-50"></i>
+                            No clinical records found.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="newClinicalRecordModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <form action="{{ url_for('clinical.add') }}" method="POST">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="fas fa-stethoscope text-primary me-2"></i>New Clinical Entry</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Patient <span class="text-danger">*</span></label>
+                            <select name="patient_id" class="form-select" required>
+                                <option value="" disabled selected>-- Choose Patient --</option>
+                                {% for p in patients %}
+                                <option value="{{ p.id }}">{{ p.full_name }} ({{ p.patient_code }})</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Attending Doctor <span class="text-danger">*</span></label>
+                            <select name="doctor_id" class="form-select" required>
+                                {% for d in doctors %}
+                                <option value="{{ d.id }}">Dr. {{ d.name }} ({{ d.specialization }})</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Visit Date <span class="text-danger">*</span></label>
+                            <input type="date" name="visit_date" class="form-control" value="{{ today_str }}" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Follow-Up Date</label>
+                            <input type="date" name="follow_up_date" class="form-control">
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Chief Complaint <span class="text-danger">*</span></label>
+                        <input type="text" name="chief_complaint" class="form-control" placeholder="e.g. Sensitivity to cold water on upper right side" required>
+                    </div>
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Clinical Examination</label>
+                            <textarea name="examination" class="form-control" rows="2" placeholder="e.g. Distal marginal ridge breakdown tooth #15"></textarea>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Diagnosis <span class="text-danger">*</span></label>
+                            <textarea name="diagnosis" class="form-control" rows="2" placeholder="e.g. Class II Dental Caries #15" required></textarea>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Procedure Done</label>
+                        <input type="text" name="procedure_performed" class="form-control" placeholder="e.g. Caries excavation, composite restoration with shade A2">
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Prescriptions (Drug | Dosage | Frequency | Duration)</label>
+                        <textarea name="prescriptions" class="form-control font-monospace" rows="3" placeholder="Amoxicillin 500mg - 1 capsule TID for 5 days&#10;Ibuprofen 400mg - 1 tablet PRN after food"></textarea>
+                    </div>
+
+                    <div class="mb-2">
+                        <label class="form-label fw-semibold">Clinical Notes & Patient Instructions</label>
+                        <input type="text" name="clinical_notes" class="form-control" placeholder="Avoid chewing hard foods for 24 hours">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Clinical Record</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

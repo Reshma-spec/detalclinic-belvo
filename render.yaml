@@ -1,0 +1,21 @@
+services:
+  - type: web
+    name: dentiflow
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:app --bind 0.0.0.0:$PORT --workers 2 --timeout 120
+    envVars:
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DATABASE_URL
+        value: sqlite:////data/dentiflow.db
+      - key: CLINIC_NAME
+        value: DentiFlow Dental Care
+      - key: CLINIC_CURRENCY
+        value: "$"
+      - key: CLINIC_TAX_RATE
+        value: "5.0"
+    disk:
+      name: dentiflow-db
+      mountPath: /data
+      sizeGB: 1

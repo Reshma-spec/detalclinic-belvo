@@ -1,0 +1,202 @@
+{% extends "base.html" %}
+{% block title %}Invoice {{ invoice.invoice_number }} - DentiFlow{% endblock %}
+{% block page_title %}Invoice Details & Receipt{% endblock %}
+{% block page_subtitle %}{{ invoice.invoice_number }} ? Patient: {{ invoice.patient.full_name }}{% endblock %}
+
+{% block content %}
+<div class="mb-4 d-flex justify-content-between align-items-center flex-wrap gap-2 no-print">
+    <a href="{{ url_for('billing.index') }}" class="btn btn-outline-secondary btn-sm">
+        <i class="fas fa-arrow-left me-1"></i> Back to Invoices
+    </a>
+    <div class="d-flex gap-2">
+        <button onclick="window.print()" class="btn btn-outline-primary btn-sm">
+            <i class="fas fa-print me-1"></i> Print Invoice
+        </button>
+        {% if invoice.balance_amount > 0 %}
+        <button class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#recordPayModal">
+            <i class="fas fa-credit-card me-1"></i> Record Payment
+        </button>
+        {% endif %}
+    </div>
+</div>
+
+<div class="content-card p-4 p-md-5">
+    <!-- Invoice Header -->
+    <div class="d-flex justify-content-between align-items-start border-bottom pb-4 mb-4 flex-wrap gap-3">
+        <div>
+            <div class="d-flex align-items-center gap-2 mb-2">
+                <div class="sidebar-brand-icon" style="width: 34px; height: 34px; font-size: 1.1rem;"><i class="fas fa-tooth"></i></div>
+                <h4 class="fw-bold text-dark mb-0">{{ settings.clinic_name }}</h4>
+            </div>
+            <div class="text-muted small">{{ settings.tagline }}</div>
+            <div class="text-muted small">{{ settings.address }}</div>
+            <div class="text-muted small"><i class="fas fa-phone me-1"></i>{{ settings.phone }} | <i class="fas fa-envelope me-1"></i>{{ settings.email }}</div>
+        </div>
+        <div class="text-md-end">
+            <h3 class="fw-bold text-primary mb-1">INVOICE</h3>
+            <div class="fw-bold text-dark fs-5">{{ invoice.invoice_number }}</div>
+            <div class="small text-muted">Date: {{ invoice.invoice_date }}</div>
+            {% if invoice.due_date %}<div class="small text-muted">Due: {{ invoice.due_date }}</div>{% endif %}
+            <div class="mt-2">
+                <span class="status-badge badge-{{ invoice.payment_status|lower|replace(' ', '-') }} fs-6">
+                    {{ invoice.payment_status }}
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Patient & Doctor Details -->
+    <div class="row g-4 mb-4">
+        <div class="col-md-6">
+            <h6 class="fw-bold text-uppercase small text-muted">Patient Details:</h6>
+            <h5 class="fw-bold text-dark mb-1">{{ invoice.patient.full_name }}</h5>
+            <div class="text-muted small">Patient ID: {{ invoice.patient.patient_code }}</div>
+            <div class="text-muted small">Phone: {{ invoice.patient.phone }}</div>
+            {% if invoice.patient.address %}<div class="text-muted small">{{ invoice.patient.address }}</div>{% endif %}
+        </div>
+        <div class="col-md-6 text-md-end">
+            <h6 class="fw-bold text-uppercase small text-muted">Attending Doctor:</h6>
+            <h5 class="fw-bold text-dark mb-1">{% if invoice.doctor %}Dr. {{ invoice.doctor.name }}{% else %}Dental Team{% endif %}</h5>
+            {% if invoice.doctor %}<div class="text-muted small">{{ invoice.doctor.specialization }}</div>{% endif %}
+        </div>
+    </div>
+
+    <!-- Table of Procedures -->
+    <div class="table-responsive mb-4">
+        <table class="table table-bordered align-middle">
+            <thead class="table-light">
+                <tr>
+                    <th style="width: 50px;" class="text-center">#</th>
+                    <th>Procedure / Service</th>
+                    <th style="width: 100px;" class="text-center">Tooth #</th>
+                    <th style="width: 80px;" class="text-center">Qty</th>
+                    <th style="width: 130px;" class="text-end">Unit Price</th>
+                    <th style="width: 130px;" class="text-end">Total</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in invoice.items %}
+                <tr>
+                    <td class="text-center text-muted">{{ loop.index }}</td>
+                    <td class="fw-semibold">{{ item.description }}</td>
+                    <td class="text-center">{{ item.tooth_number or '?' }}</td>
+                    <td class="text-center">{{ item.quantity }}</td>
+                    <td class="text-end">{{ settings.currency_symbol }}{{ "%.2f"|format(item.unit_price) }}</td>
+                    <td class="text-end fw-bold">{{ settings.currency_symbol }}{{ "%.2f"|format(item.total) }}</td>
+                </tr>
+                {% else %}
+                <tr><td colspan="6" class="text-center py-3 text-muted">No items recorded.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Totals -->
+    <div class="row g-4 justify-content-end mb-4">
+        <div class="col-md-5">
+            <div class="p-3 bg-light rounded-3 border">
+                <div class="d-flex justify-content-between mb-2">
+                    <span class="text-muted">Subtotal:</span>
+                    <span class="fw-semibold">{{ settings.currency_symbol }}{{ "%.2f"|format(invoice.subtotal) }}</span>
+                </div>
+                {% if invoice.discount_amount > 0 %}
+                <div class="d-flex justify-content-between mb-2 text-danger">
+                    <span>Discount:</span>
+                    <span>-{{ settings.currency_symbol }}{{ "%.2f"|format(invoice.discount_amount) }}</span>
+                </div>
+                {% endif %}
+                <div class="d-flex justify-content-between mb-2">
+                    <span class="text-muted">Tax ({{ invoice.tax_percent }}%):</span>
+                    <span>+{{ settings.currency_symbol }}{{ "%.2f"|format(invoice.tax_amount) }}</span>
+                </div>
+                <hr class="my-2">
+                <div class="d-flex justify-content-between fs-5 fw-bold text-dark mb-2">
+                    <span>Total Amount:</span>
+                    <span>{{ settings.currency_symbol }}{{ "%.2f"|format(invoice.total_amount) }}</span>
+                </div>
+                <div class="d-flex justify-content-between text-success fw-semibold mb-2">
+                    <span>Amount Paid:</span>
+                    <span>{{ settings.currency_symbol }}{{ "%.2f"|format(invoice.paid_amount) }}</span>
+                </div>
+                <div class="d-flex justify-content-between fs-6 fw-bold {% if invoice.balance_amount > 0 %}text-danger{% else %}text-success{% endif %} pt-2 border-top">
+                    <span>Balance Due:</span>
+                    <span>{{ settings.currency_symbol }}{{ "%.2f"|format(invoice.balance_amount) }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Payment Receipts -->
+    {% if invoice.payments.count() > 0 %}
+    <div class="mb-4">
+        <h6 class="fw-bold text-uppercase small text-muted mb-3"><i class="fas fa-receipt text-primary me-1"></i> Payments Recorded</h6>
+        <div class="table-responsive">
+            <table class="table table-sm table-bordered">
+                <thead class="table-light">
+                    <tr><th>Date</th><th>Method</th><th>Reference</th><th>Amount Paid</th></tr>
+                </thead>
+                <tbody>
+                    {% for pay in invoice.payments %}
+                    <tr>
+                        <td>{{ pay.payment_date }}</td>
+                        <td><span class="badge bg-light text-dark border">{{ pay.payment_method }}</span></td>
+                        <td><small class="text-muted">{{ pay.reference_number or '?' }}</small></td>
+                        <td class="fw-bold text-success">{{ settings.currency_symbol }}{{ "%.2f"|format(pay.amount) }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="text-center text-muted small mt-4 pt-4 border-top">
+        {{ settings.invoice_footer_note }}
+    </div>
+</div>
+
+<!-- Modal: Record Payment -->
+<div class="modal fade" id="recordPayModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <form action="{{ url_for('billing.record_payment', invoice_id=invoice.id) }}" method="POST">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="fas fa-credit-card text-success me-2"></i>Record Payment</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Payment Amount ({{ settings.currency_symbol }}) <span class="text-danger">*</span></label>
+                        <input type="number" name="amount" class="form-control" value="{{ invoice.balance_amount }}" max="{{ invoice.balance_amount }}" step="0.01" min="0.01" required>
+                    </div>
+                    <div class="row g-2 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Date</label>
+                            <input type="date" name="payment_date" class="form-control" value="{{ invoice.invoice_date }}" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Method</label>
+                            <select name="payment_method" class="form-select">
+                                <option value="Cash">Cash</option>
+                                <option value="Credit Card">Credit Card</option>
+                                <option value="Debit Card">Debit Card</option>
+                                <option value="UPI / Online">UPI / Online</option>
+                                <option value="Insurance">Insurance</option>
+                                <option value="Bank Transfer">Bank Transfer</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label fw-semibold">Reference #</label>
+                        <input type="text" name="reference_number" class="form-control" placeholder="TXN-1234">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-success">Save Payment</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+{% block title %}Interactive Dental Chart - DentiFlow{% endblock %}
+{% block page_title %}Patient Dental Chart{% endblock %}
+{% block page_subtitle %}{{ patient.full_name }} ({{ patient.patient_code }}) ? Interactive 32-Teeth Odontogram{% endblock %}
+
+{% block content %}
+<div class="content-card mb-4">
+    <div class="content-card-header flex-wrap gap-2">
+        <h5 class="content-card-title"><i class="fas fa-tooth text-primary"></i> Adult Dental Chart (32 Teeth)</h5>
+        <a href="{{ url_for('patients.detail', patient_id=patient.id, tab='chart') }}" class="btn btn-outline-primary btn-sm">
+            <i class="fas fa-arrow-left me-1"></i> Back to Patient Dossier
+        </a>
+    </div>
+    <div class="content-card-body">
+        <div class="d-flex flex-wrap gap-2 mb-4 p-3 bg-light rounded-3 border">
+            <span class="status-badge tooth-healthy border">Healthy</span>
+            <span class="status-badge tooth-caries border">Caries</span>
+            <span class="status-badge tooth-filled border">Filled</span>
+            <span class="status-badge tooth-missing border">Missing</span>
+            <span class="status-badge tooth-crown border">Crown</span>
+            <span class="status-badge tooth-root-canal border">Root Canal</span>
+            <span class="status-badge tooth-extraction-required border">Extraction Req.</span>
+            <span class="status-badge tooth-implant border">Implant</span>
+            <span class="status-badge tooth-other border">Other</span>
+        </div>
+
+        <div class="dental-arch-container text-center">
+            <div class="arch-header">Upper Maxillary Arch (Teeth 1 - 16)</div>
+            <div class="teeth-row">
+                {% set upper_teeth = [
+                    (1, '18', '3rd Molar'), (2, '17', '2nd Molar'), (3, '16', '1st Molar'), (4, '15', '2nd Premolar'),
+                    (5, '14', '1st Premolar'), (6, '13', 'Canine'), (7, '12', 'Lateral Incisor'), (8, '11', 'Central Incisor'),
+                    (9, '21', 'Central Incisor'), (10, '22', 'Lateral Incisor'), (11, '23', 'Canine'), (12, '24', '1st Premolar'),
+                    (13, '25', '2nd Premolar'), (14, '26', '1st Molar'), (15, '27', '2nd Molar'), (16, '28', '3rd Molar')
+                ] %}
+                {% for t_num, fdi, name in upper_teeth %}
+                {% set cond = chart_data.get(t_num, {}).get('condition', 'Healthy') %}
+                <div class="tooth-card tooth-{{ cond|lower|replace(' ', '-') }}" data-tooth-number="{{ t_num }}" data-fdi-number="{{ fdi }}" data-tooth-name="{{ name }}">
+                    <span class="tooth-number">#{{ t_num }}</span>
+                    <i class="fas fa-tooth tooth-icon"></i>
+                    <span class="tooth-fdi">{{ fdi }}</span>
+                </div>
+                {% endfor %}
+            </div>
+
+            <div class="my-3 border-top w-75 mx-auto opacity-50"></div>
+
+            <div class="arch-header">Lower Mandibular Arch (Teeth 32 - 17)</div>
+            <div class="teeth-row">
+                {% set lower_teeth = [
+                    (32, '48', '3rd Molar'), (31, '47', '2nd Molar'), (30, '46', '1st Molar'), (29, '45', '2nd Premolar'),
+                    (28, '44', '1st Premolar'), (27, '43', 'Canine'), (26, '42', 'Lateral Incisor'), (25, '41', 'Central Incisor'),
+                    (24, '31', 'Central Incisor'), (23, '32', 'Lateral Incisor'), (22, '33', 'Canine'), (21, '34', '1st Premolar'),
+                    (20, '35', '2nd Premolar'), (19, '36', '1st Molar'), (18, '37', '2nd Molar'), (17, '38', '3rd Molar')
+                ] %}
+                {% for t_num, fdi, name in lower_teeth %}
+                {% set cond = chart_data.get(t_num, {}).get('condition', 'Healthy') %}
+                <div class="tooth-card tooth-{{ cond|lower|replace(' ', '-') }}" data-tooth-number="{{ t_num }}" data-fdi-number="{{ fdi }}" data-tooth-name="{{ name }}">
+                    <span class="tooth-number">#{{ t_num }}</span>
+                    <i class="fas fa-tooth tooth-icon"></i>
+                    <span class="tooth-fdi">{{ fdi }}</span>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div id="toothEditorPane" class="mt-4 p-4 bg-light rounded-3 border" style="display: none;">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h6 id="selectedToothTitle" class="fw-bold text-primary mb-0"><i class="fas fa-tooth me-2"></i>Tooth Selected</h6>
+                <div id="chartSaveAlert" class="alert alert-success py-1 px-3 mb-0 small" style="display:none;"><i class="fas fa-check me-1"></i>Saved!</div>
+            </div>
+            <form id="toothFallbackForm" action="{{ url_for('dental_chart.save_form', patient_id=patient.id) }}" method="POST">
+                <input type="hidden" name="tooth_number" id="chartModalToothNum" value="1">
+                <div class="row g-3 mb-3">
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold small">Condition</label>
+                        <select name="condition" id="chartModalCondition" class="form-select form-select-sm">
+                            <option value="Healthy">Healthy (Normal)</option>
+                            <option value="Caries">Caries (Cavity / Decay)</option>
+                            <option value="Filled">Filled (Restored)</option>
+                            <option value="Missing">Missing</option>
+                            <option value="Crown">Crown</option>
+                            <option value="Root Canal">Root Canal (RCT)</option>
+                            <option value="Extraction Required">Extraction Required</option>
+                            <option value="Implant">Implant</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold small">Surface</label>
+                        <select name="surface" id="chartModalSurface" class="form-select form-select-sm">
+                            <option value="Whole">Whole Tooth</option>
+                            <option value="Occlusal">Occlusal (O)</option>
+                            <option value="Mesial">Mesial (M)</option>
+                            <option value="Distal">Distal (D)</option>
+                            <option value="Buccal">Buccal (B)</option>
+                            <option value="Lingual">Lingual (L)</option>
+                            <option value="MOD">MOD</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold small">Clinical Notes</label>
+                        <input type="text" name="notes" id="chartModalNotes" class="form-control form-control-sm" placeholder="e.g. Incipient lesion, sensitive to cold">
+                    </div>
+                </div>
+                <div class="d-flex justify-content-end">
+                    <button type="button" id="saveToothQuickBtn" class="btn btn-primary btn-sm px-4"><i class="fas fa-save me-1"></i> Save Condition</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="{{ url_for('static', filename='js/dental_chart.js') }}"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const chartData = {{ chart_data|tojson }};
+        const chartMgr = new DentalChartManager({{ patient.id }}, chartData);
+    });
+</script>
+{% endblock %}

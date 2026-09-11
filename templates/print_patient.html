@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Patient Summary - {{ patient.full_name }}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body class="bg-white p-4">
+    <div class="d-flex justify-content-between align-items-center border-bottom pb-3 mb-4">
+        <div>
+            <h3 class="fw-bold mb-0 text-primary">{{ settings.clinic_name }}</h3>
+            <div class="small text-muted">{{ settings.tagline }} ? {{ settings.address }} ? {{ settings.phone }}</div>
+        </div>
+        <div class="text-end">
+            <h5 class="fw-bold text-dark mb-0">PATIENT MEDICAL SUMMARY</h5>
+            <div class="small text-muted">Generated on {{ patient.registration_date.strftime('%Y-%m-%d') }}</div>
+        </div>
+    </div>
+
+    <div class="row g-4 mb-4">
+        <div class="col-6">
+            <h6 class="fw-bold text-uppercase small text-muted">Patient Demographics</h6>
+            <table class="table table-sm table-borderless">
+                <tr><th class="text-muted" style="width: 120px;">Name:</th><td class="fw-bold">{{ patient.full_name }}</td></tr>
+                <tr><th class="text-muted">ID:</th><td>{{ patient.patient_code }}</td></tr>
+                <tr><th class="text-muted">Gender / Age:</th><td>{{ patient.gender }} / {{ patient.age or '-' }} yrs</td></tr>
+                <tr><th class="text-muted">Phone:</th><td>{{ patient.phone }}</td></tr>
+                <tr><th class="text-muted">Blood Group:</th><td>{{ patient.blood_group or 'Unknown' }}</td></tr>
+            </table>
+        </div>
+        <div class="col-6">
+            <h6 class="fw-bold text-uppercase small text-muted">Medical Alerts</h6>
+            <div class="p-2 border rounded bg-light mb-2"><strong>Allergies:</strong> {{ patient.allergies or 'None' }}</div>
+            <div class="p-2 border rounded bg-light mb-2"><strong>Medical History:</strong> {{ patient.medical_history or 'None' }}</div>
+            <div class="p-2 border rounded bg-light"><strong>Medications:</strong> {{ patient.current_medications or 'None' }}</div>
+        </div>
+    </div>
+
+    <h6 class="fw-bold text-uppercase small text-muted mt-4 mb-2">Dental Chart Conditions Summary</h6>
+    <div class="table-responsive mb-4">
+        <table class="table table-sm table-bordered">
+            <thead class="table-light"><tr><th>Tooth #</th><th>Condition</th><th>Surface</th><th>Notes</th></tr></thead>
+            <tbody>
+                {% for t_num in range(1, 33) %}
+                {% set cond = chart_data.get(t_num) %}
+                {% if cond and cond.condition != 'Healthy' %}
+                <tr>
+                    <td class="fw-bold">Tooth #{{ t_num }}</td>
+                    <td><span class="badge bg-light text-dark border">{{ cond.condition }}</span></td>
+                    <td>{{ cond.surface }}</td>
+                    <td><small>{{ cond.notes }}</small></td>
+                </tr>
+                {% endif %}
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="text-center mt-5 pt-4 border-top text-muted small">
+        Printed from DentiFlow Dental Care Software
+    </div>
+    <script>window.onload = function() { window.print(); };</script>
+</body>
+</html>
