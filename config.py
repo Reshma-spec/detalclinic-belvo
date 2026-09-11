@@ -22,12 +22,16 @@ class Config:
             # Development: Use temporary fallback
             SECRET_KEY = 'dev-key-change-in-production-2026'
 
-    # Support Render persistent disk at /data, or local SQLite fallback
+    # Database setup - default to sqlite in database/ directory inside project root
     _db_url = os.environ.get('DATABASE_URL')
-    if _db_url and not _db_url.startswith('sqlite:///'):
-        # If it's a plain path like /data/dentiflow.db, convert to URI
-        _db_url = 'sqlite:///' + _db_url
-    SQLALCHEMY_DATABASE_URI = _db_url or 'sqlite:///' + os.path.join(basedir, 'database', 'dentiflow.db')
+    if _db_url:
+        if not _db_url.startswith('sqlite:///') and not _db_url.startswith('postgresql://') and not _db_url.startswith('mysql://'):
+            _db_url = 'sqlite:///' + _db_url
+        SQLALCHEMY_DATABASE_URI = _db_url
+    else:
+        db_dir = os.path.join(basedir, 'database')
+        os.makedirs(db_dir, exist_ok=True)
+        SQLALCHEMY_DATABASE_URI = 'sqlite:///' + os.path.join(db_dir, 'dentiflow.db')
 
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
