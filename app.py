@@ -73,20 +73,6 @@ def create_app(config_class=Config):
         db.create_all()
         # Ensure default settings row exists
         ClinicSetting.get_settings()
-        # Auto-seed default admin on first run (if no users exist)
-        if User.query.count() == 0:
-            from werkzeug.security import generate_password_hash
-            admin = User(
-                username='admin',
-                email='admin@dentiflow.com',
-                full_name='System Administrator',
-                role='admin',
-                is_active=True
-            )
-            admin.password_hash = generate_password_hash('admin123')
-            db.session.add(admin)
-            db.session.commit()
-            print("[DentiFlow] Default admin user created: admin / admin123")
 
     return app
 
@@ -101,6 +87,5 @@ if __name__ == '__main__':
         print(f"  Running on port {port} (production)")
     else:
         print(f"  Running locally on http://127.0.0.1:{port}")
-        print("  Default Admin Login: admin / admin123")
     print("=" * 60)
     app.run(host='0.0.0.0', port=port, debug=not is_production)
