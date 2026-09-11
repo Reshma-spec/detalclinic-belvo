@@ -18,18 +18,22 @@ ENV/
 
 # Flask / SQLite databases (local)
 instance/
-database/dentiflow.db
+database/
 *.db
 *.sqlite
 
-# Environment variables
+# Environment variables - NEVER commit these!
 .env
+.env.local
+.env.*.local
 
 # IDE
 .vscode/
 .idea/
 *.swp
 *.swo
+*.sublime-project
+*.sublime-workspace
 
 # OS
 .DS_Store
@@ -49,3 +53,6 @@ test.py
 chunks.txt
 files.json
 batch1.json
+
+# Render specific
+.render
